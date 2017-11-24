@@ -26,7 +26,7 @@ int CreateBuffer(
 																//If you are not creating a Vertex or Index buffer set to zero, or ResourceManager will create a structured buffer for you.
 						)
 
-(Texture data format shoud be DXGI_FORMAT_R8G8B8A8_UNORM)
+
 int CreateTexture2D(
 									bindFlags,			//Create buffer with these bind flags(ie. D3D11_BIND_VERTEX_BUFFER)
 									format					//Pixel format
