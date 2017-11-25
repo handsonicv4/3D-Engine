@@ -7,11 +7,13 @@ Manage D3D shaders and inputlayout (Just support vertex shader, pixel shader and
 */
 #pragma once
 #include <d3d11_1.h>
+#include <D3Dcompiler.h>
 #include"D3Def.h"
 #include <map>
 #include <vector>
 using namespace std;
-
+#pragma comment(lib, "D3DCompiler.lib")
+#pragma comment(lib, "dxguid.lib" )
 
 struct InputLayout
 {
