@@ -1,6 +1,6 @@
 #pragma once
-#include<Windows.h>
-#include <D3Dcompiler.h>
+//#include<Windows.h>
+
 
 #define MAX_SHADER_NUMBER 256
 #define MAX_SLOT_NUMBER 64
