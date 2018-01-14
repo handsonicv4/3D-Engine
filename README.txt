@@ -3,7 +3,7 @@
 Feature:
 Skeletal Animation
 Skinned Instancing (Instancing with multiple animation applied)
-Standart Diffuse+Specular+Ambient Light
+Standard Diffuse+Specular+Ambient Light
 Normal Map
 Space mode and FPS mode camera support
 Flexible shader management
