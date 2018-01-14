@@ -137,6 +137,10 @@ ResourceManager::~ResourceManager()
 {
 	Clear();
 }
+D3D11_BIND_FLAG ResourceManager::GetBindFlag(BindFlag flag)
+{
+	return (D3D11_BIND_FLAG)flag;
+}
 ResourceManager::ResourceManager(ID3D11Device * devicePtr, ID3D11DeviceContext * deviceContextPtr) :ResourceManager()
 {
 	this->devicePtr = devicePtr;
@@ -213,7 +217,7 @@ void ResourceManager::Bind(UINT stages, D3D11_BIND_FLAG bindFlag, UINT startSlot
 	{
 		ID3D11DepthStencilView* dsv = NULL;
 		ID3D11RenderTargetView** rtv = (ID3D11RenderTargetView**)ptr;
-		UINT stageID = GetIDByEnum(Output_Merge);
+		UINT stageID = GetIDByEnum(Stage_Output_Merge);
 		UINT bindID = GetIDByEnum(D3D11_BIND_DEPTH_STENCIL);
 		int dsvID = bindingTable[stageID][bindID][0];
 		if (dsvID != -1)
@@ -225,27 +229,27 @@ void ResourceManager::Bind(UINT stages, D3D11_BIND_FLAG bindFlag, UINT startSlot
 	else if (bindFlag == D3D11_BIND_CONSTANT_BUFFER)
 	{
 		ID3D11Buffer** buffer = (ID3D11Buffer**)ptr;
-		if (stages & Vertex_Shader)
+		if (stages & Stage_Vertex_Shader)
 		{
 			deviceContextPtr->VSSetConstantBuffers(startSlot, numViews, buffer);
 		}
-		if (stages & Hull_Shader)
+		if (stages & Stage_Hull_Shader)
 		{
 			deviceContextPtr->HSSetConstantBuffers(startSlot, numViews, buffer);
 		}
-		if (stages & Domain_Shader)
+		if (stages & Stage_Domain_Shader)
 		{
 			deviceContextPtr->DSSetConstantBuffers(startSlot, numViews, buffer);
 		}
-		if (stages & Geometry_Shader)
+		if (stages & Stage_Geometry_Shader)
 		{
 			deviceContextPtr->GSSetConstantBuffers(startSlot, numViews, buffer);
 		}
-		if (stages & Pixel_Shader)
+		if (stages & Stage_Pixel_Shader)
 		{
 			deviceContextPtr->PSSetConstantBuffers(startSlot, numViews, buffer);
 		}
-		if (stages & Compute_Shader)
+		if (stages & Stage_Compute_Shader)
 		{
 			deviceContextPtr->CSSetConstantBuffers(startSlot, numViews, buffer);
 		}
@@ -253,27 +257,27 @@ void ResourceManager::Bind(UINT stages, D3D11_BIND_FLAG bindFlag, UINT startSlot
 	else if (bindFlag == D3D11_BIND_SHADER_RESOURCE)
 	{
 		ID3D11ShaderResourceView** srv = (ID3D11ShaderResourceView**)ptr;
-		if (stages & Vertex_Shader)
+		if (stages & Stage_Vertex_Shader)
 		{
 			deviceContextPtr->VSSetShaderResources(startSlot, numViews, srv);
 		}
-		if (stages & Hull_Shader)
+		if (stages & Stage_Hull_Shader)
 		{
 			deviceContextPtr->HSSetShaderResources(startSlot, numViews, srv);
 		}
-		if (stages & Domain_Shader)
+		if (stages & Stage_Domain_Shader)
 		{
 			deviceContextPtr->DSSetShaderResources(startSlot, numViews, srv);
 		}
-		if (stages & Geometry_Shader)
+		if (stages & Stage_Geometry_Shader)
 		{
 			deviceContextPtr->GSSetShaderResources(startSlot, numViews, srv);
 		}
-		if (stages & Pixel_Shader)
+		if (stages & Stage_Pixel_Shader)
 		{
 			deviceContextPtr->PSSetShaderResources(startSlot, numViews, srv);
 		}
-		if (stages & Compute_Shader)
+		if (stages & Stage_Compute_Shader)
 		{
 			deviceContextPtr->CSSetShaderResources(startSlot, numViews, srv);
 		}
@@ -281,7 +285,7 @@ void ResourceManager::Bind(UINT stages, D3D11_BIND_FLAG bindFlag, UINT startSlot
 }
 vector<ID3D11RenderTargetView*> ResourceManager::GetRenderTargets()
 {
-	UINT stageID = GetIDByEnum(Output_Merge);
+	UINT stageID = GetIDByEnum(Stage_Output_Merge);
 	UINT bindID = GetIDByEnum(D3D11_BIND_RENDER_TARGET);
 	int* table = bindingTable[stageID][bindID];
 	vector<ID3D11RenderTargetView*> rtvs;
@@ -319,10 +323,10 @@ void ResourceManager::UnbindView(ResourceView & view)
 {
 	map<PiplineStage, int> temp = view.bindingMap;//copy
 	map<PiplineStage, int>::iterator it = temp.begin();
-	while (it != view.bindingMap.end())
+	while (it != temp.end())
 	{
 		if (it->second>-1)
-			SetBinding(it->first, view.type, it->second, -1);
+			SetBinding(it->first, (BindFlag)view.type, it->second, -1);
 		it++;
 	}
 }
@@ -703,42 +707,46 @@ bool ResourceManager::UpdateResourceData(ID3D11Resource *resource, void * pData,
 	}
 	return true;
 }
-bool ResourceManager::SetBinding(PiplineStage stage, D3D11_BIND_FLAG bindFlag, UINT startSlot, vector< int>& idList)
+bool ResourceManager::SetBinding(PiplineStage stage, BindFlag bindFlag, UINT startSlot, vector< int>& idList)
 {
+	D3D11_BIND_FLAG d3dbindFlag = GetBindFlag(bindFlag);
 	if (startSlot < 0 || startSlot >= MAX_SLOT_NUMBER || !idList.size())
 	{
 		return false;
 	}
-	if (bindFlag == D3D11_BIND_DEPTH_STENCIL)
+	if (d3dbindFlag == D3D11_BIND_DEPTH_STENCIL)
 	{
-		stage = Output_Merge;
+		stage = Stage_Output_Merge;
 		startSlot = 0;
 		if (idList.size() > 1)
 			return false;
 	}
-	else if (bindFlag == D3D11_BIND_RENDER_TARGET)
+	else if (d3dbindFlag == D3D11_BIND_RENDER_TARGET)
 	{
-		stage = Output_Merge;
+		stage = Stage_Output_Merge;
 		startSlot = 0;
 	}
-	else if (bindFlag == D3D11_BIND_INDEX_BUFFER)
+	else if (d3dbindFlag == D3D11_BIND_INDEX_BUFFER)
 	{
-		stage = Input_Assembler;
+		stage = Stage_Input_Assembler;
 		startSlot = 0;
 		if (idList.size() > 1)
 			return false;
 	}
-	else if (bindFlag == D3D11_BIND_VERTEX_BUFFER)
+	else if (d3dbindFlag == D3D11_BIND_VERTEX_BUFFER)
 	{
-		stage = Input_Assembler;
+		stage = Stage_Input_Assembler;
 	}
-	else if (bindFlag == D3D11_BIND_STREAM_OUTPUT)
+	else if (d3dbindFlag == D3D11_BIND_STREAM_OUTPUT)
 	{
-		stage = Stream_Out;
+		stage = Stage_Stream_Out;
 		startSlot = 0;
 	}
+
+
 	vector<void*> newView;
 	newView.resize(idList.size());
+	int stride=-1;
 	for (int i = 0; i < idList.size(); i++)
 	{
 		int &id = idList[i];
@@ -746,39 +754,40 @@ bool ResourceManager::SetBinding(PiplineStage stage, D3D11_BIND_FLAG bindFlag, U
 		{
 			newView[i] = NULL;
 		}
-		else if (resourcePool.count(id) && resourcePool[id].viewPool.count(bindFlag))
+		else if (resourcePool.count(id) && resourcePool[id].viewPool.count(d3dbindFlag))
 		{
-			newView[i] = resourcePool[id].viewPool[bindFlag].ptr;
+			newView[i] = resourcePool[id].viewPool[d3dbindFlag].ptr;
+			stride = resourcePool[id].stride;
 		}
 		else
 		{
 			return false;
 		}
 	}
-	unsigned	int &stride = resourcePool[idList[0]].stride;
+
 	bool change = false;
 
-	if (bindFlag == D3D11_BIND_RENDER_TARGET || bindFlag == D3D11_BIND_STREAM_OUTPUT)
+	if (d3dbindFlag == D3D11_BIND_RENDER_TARGET || d3dbindFlag == D3D11_BIND_STREAM_OUTPUT)
 	{
 		//Set OM stage will lose all binding resource
 		for (int i = 0; i < MAX_SLOT_NUMBER; i++)
 		{
-			SetBindingTable(stage, bindFlag, i, -1);
+			SetBindingTable(stage, d3dbindFlag, i, -1);
 		}
 		change = true;
 	}
 	for (int i = 0; i < idList.size(); i++)
 	{
-		change = SetBindingTable(stage, bindFlag, startSlot + i, idList[i]) || change;
+		change = SetBindingTable(stage, d3dbindFlag, startSlot + i, idList[i]) || change;
 	}
 
 
-	if (change)
+	if (change|| stride!=-1)
 	{
-		Bind(stage, bindFlag, startSlot, newView.size(), &newView[0], stride);
+		Bind(stage, d3dbindFlag, startSlot, newView.size(), &newView[0], stride);
 	}
 }
-bool ResourceManager::SetBinding(PiplineStage stage, D3D11_BIND_FLAG bindFlag, UINT slot, int id)
+bool ResourceManager::SetBinding(PiplineStage stage, BindFlag bindFlag, UINT slot, int id)
 {
 	vector<int> temp;
 	temp.push_back(id);
@@ -1096,6 +1105,7 @@ void ResourceManager::Clear()
 	{
 		ClearViews(it->second);
 		it->second.ptr->Release();
+		it++;
 	}
 	resourcePool.clear();
 	memset(bindingTable, -1, sizeof(bindingTable));

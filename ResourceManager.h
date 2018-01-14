@@ -26,7 +26,7 @@ int CreateBuffer(
 																//If you are not creating a Vertex or Index buffer set to zero, or ResourceManager will create a structured buffer for you.
 						)
 
-
+(Texture data format shoud be DXGI_FORMAT_R8G8B8A8_UNORM)
 int CreateTexture2D(
 									bindFlags,			//Create buffer with these bind flags(ie. D3D11_BIND_VERTEX_BUFFER)
 									format					//Pixel format
@@ -127,13 +127,14 @@ private:
 	//=================UpdateData===================
 	bool UpdateResourceData(ID3D11Resource *resource, void* pData, UINT size);
 
+	static D3D11_BIND_FLAG GetBindFlag(BindFlag flag);
 public:
 	ResourceManager();
 	~ResourceManager();
 	ResourceManager(ID3D11Device* devicePtr, ID3D11DeviceContext* deviceContextPtr);
 
-	bool SetBinding(PiplineStage stage, D3D11_BIND_FLAG bindFlag, UINT startSlot, vector< int>& idList);
-	bool SetBinding(PiplineStage stage, D3D11_BIND_FLAG bindFlag, UINT slot, int id);
+	bool SetBinding(PiplineStage stage, BindFlag bindFlag, UINT startSlot, vector< int>& idList);
+	bool SetBinding(PiplineStage stage, BindFlag bindFlag, UINT slot, int id);
 
 	int CreateBuffer(UINT bindFlags, bool isDynamic, UINT bufferSize, void* pData = NULL, UINT dataSize = 0, UINT elementStride = 0);
 	int CreateTexture2D(UINT  bindFlag, DXGI_FORMAT format, bool isDynamic, bool genMip, UINT width, UINT height, void* pData = NULL);

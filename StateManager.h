@@ -3,7 +3,7 @@
 #include"D3Def.h"
 #include <map>
 #include <vector>
-#include <set>
+
 using namespace std;
 
 struct SamplerState
@@ -59,6 +59,7 @@ public:
 	void ClearRasterizerState();
 	void ClearBlendState();
 	void ClearDepthStencilState();
+	void Clear();
 
 	bool SetSamplerState(UINT stages, UINT slot, int id);
 	bool SetRasterState(int id);

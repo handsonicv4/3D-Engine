@@ -8,6 +8,7 @@ DWORD shaderFlag = D3DCOMPILE_OPTIMIZATION_LEVEL3;
 #endif // DEBUG
 
 
+
 Pass::Pass(int vIndex, int pIndex)
 {
 	vSIndex = vIndex;
@@ -368,52 +369,52 @@ int ShaderManager::GetInputLayout(ID3DBlob * compiledShader)
 
 		if (!strcmp(sPDesc.SemanticName, "POSITION"))
 		{
-			inputElementDescs[i].InputSlot = PositionSlot;
+			inputElementDescs[i].InputSlot = Slot_Input_Position;
 		}
 		else 	if (!strcmp(sPDesc.SemanticName, "COLOR"))
 		{
-			inputElementDescs[i].InputSlot = ColorSlot;
+			inputElementDescs[i].InputSlot = Slot_Input_Color;
 		}
 		else 	if (!strcmp(sPDesc.SemanticName, "NORMAL"))
 		{
-			inputElementDescs[i].InputSlot = NormalSlot;
+			inputElementDescs[i].InputSlot = Slot_Input_Normal;
 		}
 		else 	if (!strcmp(sPDesc.SemanticName, "TEXCOORD"))
 		{
-			inputElementDescs[i].InputSlot = TexCoordSlot;
+			inputElementDescs[i].InputSlot = Slot_Input_TexCoord;
 		}
 		else 	if (!strcmp(sPDesc.SemanticName, "PSIZE"))
 		{
-			inputElementDescs[i].InputSlot = PSizeSlot;
+			inputElementDescs[i].InputSlot = Slot_Input_PSize;
 		}
 		else 	if (!strcmp(sPDesc.SemanticName, "BINORMAL"))
 		{
-			inputElementDescs[i].InputSlot = BinormalSlot;
+			inputElementDescs[i].InputSlot = Slot_Input_Binormal;
 		}
 		else 	if (!strcmp(sPDesc.SemanticName, "TANGENT"))
 		{
-			inputElementDescs[i].InputSlot = TangentSlot;
+			inputElementDescs[i].InputSlot = Slot_Input_Tangent;
 		}
 		else 	if (!strcmp(sPDesc.SemanticName, "POSITIONT"))
 		{
-			inputElementDescs[i].InputSlot = PositionTSlot;
+			inputElementDescs[i].InputSlot = Slot_Input_PositionT;
 		}
 		else 	if (!strcmp(sPDesc.SemanticName, "BLENDINDICES"))
 		{
-			inputElementDescs[i].InputSlot = BlendIndicesSlot;
+			inputElementDescs[i].InputSlot = Slot_Input_BlendIndices;
 		}
 		else 	if (!strcmp(sPDesc.SemanticName, "BLENDWEIGHT"))
 		{
-			inputElementDescs[i].InputSlot = BlendWeightSlot;
+			inputElementDescs[i].InputSlot = Slot_Input_BlendWeight;
 		}
 		else if (!strcmp(sPDesc.SemanticName, "SV_InstanceID"))
 		{
 			inputElementDescs[i].InputSlotClass = D3D11_INPUT_PER_INSTANCE_DATA;
-			inputElementDescs[i].InputSlot = InstanceIDSlot;
+			inputElementDescs[i].InputSlot = Slot_Input_InstanceID;
 		}
 		else
 		{
-			inputElementDescs[i].InputSlot = OtherSlot;
+			inputElementDescs[i].InputSlot = Slot_Input_Other;
 		}
 
 		inputElementDescs[i].AlignedByteOffset = byteOffset[inputElementDescs[i].InputSlot];

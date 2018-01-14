@@ -211,6 +211,14 @@ void StateManager::ClearDepthStencilState()
 	dssPool.clear();
 }
 
+void StateManager::Clear()
+{
+	ClearSamplerState();
+	ClearRasterizerState();
+	ClearBlendState();
+	ClearDepthStencilState();
+}
+
 bool StateManager::SetSamplerState(UINT stages, UINT slot, int id)
 {
 	ID3D11SamplerState* ptr=NULL;
@@ -221,27 +229,27 @@ bool StateManager::SetSamplerState(UINT stages, UINT slot, int id)
 		else
 			ptr = ssPool[id].ptr;
 	}
-	if (stages & Vertex_Shader)
+	if (stages & Stage_Vertex_Shader)
 	{
 			deviceContextPtr->VSSetSamplers(slot, 1, &ptr);
 	}
-	if (stages & Hull_Shader)
+	if (stages & Stage_Hull_Shader)
 	{
 			deviceContextPtr->HSSetSamplers(slot, 1, &ptr);
 	}
-	if (stages & Domain_Shader)
+	if (stages & Stage_Domain_Shader)
 	{
 		deviceContextPtr->DSSetSamplers(slot, 1, &ptr);
 	}
-	if (stages & Geometry_Shader)
+	if (stages & Stage_Geometry_Shader)
 	{
 			deviceContextPtr->GSSetSamplers(slot, 1, &ptr);
 	}
-	if (stages & Pixel_Shader)
+	if (stages & Stage_Pixel_Shader)
 	{
 			deviceContextPtr->PSSetSamplers(slot, 1, &ptr);
 	}
-	if (stages & Compute_Shader)
+	if (stages & Stage_Compute_Shader)
 	{
 			deviceContextPtr->CSSetSamplers(slot, 1, &ptr);
 	}

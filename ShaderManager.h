@@ -39,7 +39,7 @@ struct ComputeShader
 
 class ShaderManager
 {
-	friend class D3D;
+	friend class GEngine;
 public:
 	ShaderManager();
 	ShaderManager(ID3D11Device* devicePtr,	ID3D11DeviceContext* deviceContextPtr);
