@@ -1,9 +1,9 @@
 # 3D-Engine
 https://youtu.be/owLLfnTd2oo
 
-![image](https://github.com/handsonicv4/3D-Engine/raw/master/img/Capture1.PNG)
+![image](https://github.com/handsonicv4/3D-Engine/raw/master/img/c1.PNG)
 
-![image](https://github.com/handsonicv4/3D-Engine/raw/master/img/GIF2.gif)
+![image](https://github.com/handsonicv4/3D-Engine/raw/master/img/GIF.gif)
 
 3D Engine with DirectX11
 Feature:
