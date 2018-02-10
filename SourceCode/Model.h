@@ -1,6 +1,6 @@
 //--------------------Model Class with Animation and Camera Class------------------
 //---Model file importer and matrix calculation logic currently depend on Assimp---
-//---This part is platform independent
+//---Author Sentao
 
 #pragma once
 #include <vector>
@@ -134,6 +134,7 @@ class Model
 {
 	friend class Instance;
 public:
+	Model();
 	string modelFilePath;
 	NodeList nodeList;
 	vector<Animation> animationList;
@@ -228,6 +229,26 @@ protected:
 	void UpdateTransform();
 };
 
+struct InstanceMaterial
+{
+	float diffusePower;
+	float specularPower;
+	float specularHardness;
+	float emissivity;
+	float refractiveIndex;
+
+	float diffuseColor[3];
+	float emissiveColor[3];
+	float specularColor[3];
+	float opacity;
+
+	unsigned int textureEnableFlags;
+
+	InstanceMaterial();
+	//0x01 diffuse, 0x02 normal, 0x04 specular, 0x08 emissive;
+
+};
+
 class Instance : public Transform
 {
 public:
@@ -236,6 +257,8 @@ public:
 	unsigned int animationID;
 	double animationTime;
 	aiColor4D color;
+	InstanceMaterial material;
+	bool useInstanceMaterial;
 	bool visable;
 
 	Instance();

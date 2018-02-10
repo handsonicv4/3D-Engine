@@ -6,7 +6,7 @@ GEngine::GEngine()
 	numBonePerVertex = 4;
 	numBonePerBatch = 1024;
 	animationMatrix.reserve(numBonePerBatch);
-
+	instanceMaterialData.reserve(numBonePerBatch);
 	maxInstances = 256;
 	instanceData.reserve(maxInstances);
 
@@ -15,13 +15,23 @@ GEngine::GEngine()
 	MaxLightNumber = 1024;
 	oldResolutionX = 0;
 	oldResolutionY = 0;
-
+	
 	resolutionX = 1280;
 	resolutionY = 720;
 
 	maxTileNumber = 8160;//...
 	tileSize = 16;
 	tileBatchSize = 16;
+	
+	voxelDimention[0] = 64;
+	voxelDimention[1] = 64;
+	voxelDimention[2] = 64;
+
+	voxelSize[0] = 10.0 / voxelDimention[0];
+	voxelSize[1] = 10.0 / voxelDimention[1];
+	voxelSize[2] = 10.0 / voxelDimention[2];
+
+	objData.alphaFactor = 0.1;
 }
 
 GEngine::~GEngine()
@@ -74,19 +84,26 @@ bool GEngine::InitBuffers()
 	if (lightBufferID == -1)
 		return false;
 
+	instanceMaterialID = resources.CreateBuffer(Bind_Shader_Resource, true, maxInstances * sizeof(InstanceMaterial), NULL, 0, sizeof(InstanceMaterial));
+	if (instanceMaterialID == -1)
+		return false;
+
 	resources.SetBinding(Stage_Output_Merge, Bind_Depth_Stencil, 0, depthStencilBufferID);
 
 	resources.SetBinding(Stage_Vertex_Shader, Bind_Constant_Buffer, Slot_CBuffer_Frame, frameBufferID);
 	resources.SetBinding(Stage_Pixel_Shader, Bind_Constant_Buffer, Slot_CBuffer_Frame, frameBufferID);
 	resources.SetBinding(Stage_Compute_Shader, Bind_Constant_Buffer, Slot_CBuffer_Frame, frameBufferID);
+	resources.SetBinding(Stage_Geometry_Shader, Bind_Constant_Buffer, Slot_CBuffer_Frame, frameBufferID);
 
 	resources.SetBinding(Stage_Vertex_Shader, Bind_Constant_Buffer, Slot_CBuffer_Object, objBufferID);
 	resources.SetBinding(Stage_Pixel_Shader, Bind_Constant_Buffer, Slot_CBuffer_Object, objBufferID);
 	resources.SetBinding(Stage_Compute_Shader, Bind_Constant_Buffer, Slot_CBuffer_Object, objBufferID);
+	resources.SetBinding(Stage_Geometry_Shader, Bind_Constant_Buffer, Slot_CBuffer_Object, objBufferID);
 
 	resources.SetBinding(Stage_Vertex_Shader, Bind_Shader_Resource, Slot_Texture_AnimMatrix, animationMatrixBufferID);
 	resources.SetBinding(Stage_Vertex_Shader, Bind_Shader_Resource, Slot_Texture_Instance, instanceBufferID);
 	resources.SetBinding(Stage_Pixel_Shader, Bind_Shader_Resource, Slot_Texture_Light, lightBufferID);
+	resources.SetBinding(Stage_Pixel_Shader, Bind_Shader_Resource, Slot_Texture_Instance, instanceMaterialID);
 
 	return true;
 }
@@ -128,11 +145,13 @@ void GEngine::UpdateInstanceBuffer(Model *pModel, unsigned int meshID)
 	Mesh &mesh = pModel->meshList[meshID];
 
 	unsigned int stride = mesh.boneList.size();
+	instanceMaterialData.clear();
 	animationMatrix.clear();
 	instanceData.clear();
 	map<int, Instance> ::iterator it = pModel->instances.begin();
 	
 	unsigned int index = 0;
+	unsigned int mindex = 1;
 	InstanceData idata;
 	//Per instance loop
 	while (it != pModel->instances.end())
@@ -144,21 +163,36 @@ void GEngine::UpdateInstanceBuffer(Model *pModel, unsigned int meshID)
 			continue;
 		}
 		//Write Instance data
-		memcpy(&idata.color, &instance.color, sizeof(float[4]));	
+		memcpy(&idata.color, &instance.color, sizeof(float[4]));
 		memcpy(&idata.world, &instance.transformMatrix, sizeof(float[16]));
 		aiMatrix4x4 wvp = camera.GetProjectionMatrix()*camera.GetViewMatrix()*instance.transformMatrix;
 		memcpy(&idata.wVP, &wvp, sizeof(float[16]));
 		idata.bindMatrixOffset = index*stride;
-		instanceData.push_back(idata);
+		
+		
 
 		//Write animation data
 		if (pModel->hasAnimation)
 		{
 			//accumulate bind matrix
 			vector<aiMatrix4x4> matrixArray = instance.GetBindMatrix(meshID);
+			//vector<aiMatrix4x4> identity(matrixArray.size());//Debug
+
 			animationMatrix.insert(animationMatrix.end(), matrixArray.begin(), matrixArray.end());
 		}
 
+		//Apply instance material
+		if (instance.useInstanceMaterial)
+		{
+			instanceMaterialData.push_back(instance.material);
+			idata.instanceMaterialID = mindex;
+			mindex++;
+		}
+		else
+		{
+			idata.instanceMaterialID = 0;
+		}
+		instanceData.push_back(idata);
 		index++;
 		it++;
 	}
@@ -170,6 +204,13 @@ void GEngine::UpdateInstanceBuffer(Model *pModel, unsigned int meshID)
 	{
 		resources.UpdateResourceData(animationMatrixBufferID, &animationMatrix[0], sizeof(float[16])*animationMatrix.size());
 	}
+
+	//Update instance material data
+	if (instanceMaterialData.size() > 0)
+	{
+		resources.UpdateResourceData(instanceMaterialID, &instanceMaterialData[0], sizeof(InstanceMaterial)*instanceMaterialData.size());
+	}
+
 }
 
 bool GEngine::UpdateFrameBuffer()
@@ -177,8 +218,13 @@ bool GEngine::UpdateFrameBuffer()
 	aiMatrix4x4 projection = camera.GetProjectionMatrix();
 	aiMatrix4x4 projectionInv = projection;
 	projectionInv.Inverse();
+	//aiMatrix4x4 viewProjection = camera.GetProjectionMatrix()*camera.GetViewMatrix();
+
 	memcpy(&frameData.projection, &projection, sizeof(float[16]));
 	memcpy(&frameData.projectionInv, &projectionInv, sizeof(float[16]));
+	memcpy(&frameData.voxelDimention, &voxelDimention, sizeof(float[3]));
+	memcpy(&frameData.voxelSize, &voxelSize, sizeof(float[3]));
+	//memcpy(&frameData.viewProjection, &viewProjection, sizeof(float[16]));
 
 	aiVector3D position = camera.GetPosition();
 	memcpy(frameData.cameraPos, &position, sizeof(float[3]));
@@ -217,26 +263,45 @@ void GEngine::RenderMaterial(MaterialResource * pMaterial)
 	resources.SetBinding(Stage_Pixel_Shader, Bind_Shader_Resource, Slot_Texture_Normal, pMaterial->normalMap);
 	resources.SetBinding(Stage_Pixel_Shader, Bind_Shader_Resource, Slot_Texture_Ambient, pMaterial->ambientMap);
 	resources.SetBinding(Stage_Pixel_Shader, Bind_Shader_Resource, Slot_Texture_Specular, pMaterial->specularMap);
+	objData.alphaFactor = pMaterial->opacity;
+	objData.diffusePower = pMaterial->diffusePower;
+	objData.emissivity = pMaterial->emissivity;
+	objData.refractiveIndex = pMaterial->refractiveIndex;
+	objData.specularPower = pMaterial->specularPower;
+	objData.specularHardness = pMaterial->specularHardness;
+	memcpy(objData.diffuseColor, pMaterial->diffuseColor, sizeof(float[3]));
+	memcpy(objData.specularColor, pMaterial->specularColor, sizeof(float[3]));
+	memcpy(objData.ambientColor, pMaterial->ambientColor, sizeof(float[3]));
 
 }
 
 void GEngine::RenderModel(ModelResource * pModel)
 {
 	UINT instanceCount = pModel->model->UpdateVisableInstances();
-	objData.HasAnimation = pModel->hasAnimation;
+	if (!instanceCount)
+	{
+		return;
+	}
+	objData.flags = 0;
+	objData.flags |= pModel->hasAnimation ? Apply_Animation : 0x00;
 
 	for (int i = 0; i < pModel->meshes.size(); i++)
 	{
 		MeshResource &mesh = pModel->meshes[i];
-		MaterialResource &material = pModel->materials[mesh.materialID];
-
 		RenderMesh(&mesh);
-		RenderMaterial(&material);
 
-		objData.HasAmbientMap = material.ambientMap == -1 ? 0 : 1;
-		objData.HasDiffuseMap = material.diffuseMap == -1 ? 0 : 1;
-		objData.HasSpecularMap = material.specularMap == -1 ? 0 : 1;
-		objData.HasNormalMap = (material.normalMap == -1 || mesh.tangentID == -1 || mesh.bitangentID == -1) ? 0 : 1;
+		if (mesh.materialID >= 0)
+		{
+			MaterialResource &material = pModel->materials[mesh.materialID];
+			RenderMaterial(&material);
+			objData.flags |= material.ambientMap == -1 ? 0 : Apply_Texture_Ambient;
+			objData.flags |= material.diffuseMap == -1 ? 0 : Apply_Texture_Diffuse;
+			objData.flags |= material.specularMap == -1 ? 0 : Apply_Texture_Specular;
+			objData.flags |= (material.normalMap == -1 || mesh.tangentID == -1 || mesh.bitangentID == -1) ? 0 : Apply_Texture_Normal;
+
+		}
+
+		
 
 		UpdateObjBuffer();
 		UpdateInstanceBuffer(pModel->model, i);
@@ -306,6 +371,9 @@ int GEngine::LoadModel(Model &model)
 
 			dataSize = srcMesh.vertexBindWight.size() * sizeof(float);
 			dataPtr = &srcMesh.vertexBindWight[0];
+
+			//vector<float> debug(srcMesh.vertexBindWight.size(), 0.25);
+			//dataPtr = &debug[0];
 			dstMesh.boneWeightID = resources.CreateBuffer(Bind_Vertex_Buffer, false, dataSize, dataPtr, dataSize, numBonePerVertex * sizeof(float));
 		}
 		if (!srcMesh.indices.empty())
@@ -324,6 +392,17 @@ int GEngine::LoadModel(Model &model)
 	{
 		MaterialResource &dstMaterial = rmodel.materials[i];
 		Material &srcMaterial = model.materialList[i];
+
+		dstMaterial.opacity = srcMaterial.opacity;
+		dstMaterial.diffusePower = srcMaterial.diffusePower;
+		dstMaterial.emissivity = srcMaterial.emissivity;
+		dstMaterial.refractiveIndex = srcMaterial.refractiveIndex;
+		dstMaterial.specularPower = srcMaterial.specularPower;
+		dstMaterial.specularHardness = srcMaterial.specularHardness;
+		memcpy(dstMaterial.diffuseColor, srcMaterial.diffuse, sizeof(float[3]));
+		memcpy(dstMaterial.specularColor, srcMaterial.specular, sizeof(float[3]));
+		memcpy(dstMaterial.ambientColor, srcMaterial.ambient, sizeof(float[3]));
+
 		if (srcMaterial.hasDiffuseMap)
 		{
 			dstMaterial.diffuseMap = resources.CreateTexture2D(
@@ -348,7 +427,7 @@ int GEngine::LoadModel(Model &model)
 				srcMaterial.normalMap.GetImageDataPtr());
 		}
 	}
-	return 1;
+	return modelID;
 }
 
 void GEngine::UnloadModel(UINT modelID)
@@ -398,54 +477,82 @@ void GEngine::UnloadModel(UINT modelID)
 
 }
 
-void GEngine::Frame()
+void GEngine::Render()
 {
-	if(!UpdateFrameBuffer())
-		MessageBox(0, L"UpdateConstantBuffer Error!", L"Error!", MB_OK);
-	if(!UpdateLightBuffer())
-		MessageBox(0, L"UpdateLightBuffer Error!", L"Error!", MB_OK);
+	//if(!UpdateFrameBuffer())
+	//	MessageBox(0, L"UpdateConstantBuffer Error!", L"Error!", MB_OK);
+	//if(!UpdateLightBuffer())
+	//	MessageBox(0, L"UpdateLightBuffer Error!", L"Error!", MB_OK);
 
 	//Tiling----------------------
-	if (
-		oldResolutionX != frameData.screenDimensions[0] ||
-		oldResolutionY != frameData.screenDimensions[1] ||
-		memcmp(&oldProjection, &frameData.projection, sizeof(float[16])) != 0
-		)
-	{
-		//Update tiles
-		if (!Tiling())
-			MessageBox(0, L"Tilling Error!", L"Error!", MB_OK);
-		oldResolutionX = frameData.screenDimensions[0];
-		oldResolutionY = frameData.screenDimensions[1];
-		memcpy(oldProjection, frameData.projection, sizeof(float[16]));
-	}
-
-	//rendering----------------------
-	float color[] = { 0,0,0.5,0 };
-	resources.ResetRTV(backBufferID, color);
-	resources.ResetDSV(depthStencilBufferID, D3D11_CLEAR_DEPTH, 1.0f, 0);
-	
-	//Z pre pass
-	//deviceContextPtr->OMSetRenderTargets(1, &nullRTVPtr, depthStencilViewPtr);
-	//deviceContextPtr->OMSetDepthStencilState(depthStencilStatePtr, 1);
-	//passType = Pass_Pre_Z;
-	//for (int i = 0;i < gModelListSize;i++)
+	//if (
+	//	oldResolutionX != frameData.screenDimensions[0] ||
+	//	oldResolutionY != frameData.screenDimensions[1] ||
+	//	memcmp(&oldProjection, &frameData.projection, sizeof(float[16])) != 0
+	//	)
 	//{
-	//	if (gModelList[i])
-	//		RenderModle(gModelList[i]);
+	//	//Update tiles
+	//	if (!Tiling())
+	//		MessageBox(0, L"Tilling Error!", L"Error!", MB_OK);
+	//	oldResolutionX = frameData.screenDimensions[0];
+	//	oldResolutionY = frameData.screenDimensions[1];
+	//	memcpy(oldProjection, frameData.projection, sizeof(float[16]));
 	//}
 
-	//Normal pass
-	//deviceContextPtr->OMSetRenderTargets(1, &backBufferRTVPtr, depthStencilViewPtr);
 
-	//passType = Pass_Normal;
+
+
 	map< int, ModelResource>::iterator it = modelList.begin();
 	while (it != modelList.end())
 	{
 		RenderModel(&(it->second));
 		it++;
 	}
-	Swap();
+	//Swap();
+}
+
+void GEngine::Render(const Pass &pass)
+{
+	//Set status and view port
+	states.blend = pass.blend;
+	states.depthStencil = pass.depthStencil;
+	states.rasterizor = pass.rasterizer;
+	viewport = pass.viewPort;
+
+	states.UpdateBlendState();
+	states.UpdateDepthStencilState();
+	states.UpdateRasterizorState();
+	UpdateViewPort();
+
+	//Activate Shaders
+	vertexShader.Activate(pass.vertexShaderID);
+	pixelShader.Activate(pass.pixelShaderID);
+	geometryShader.Activate(pass.geometryShaderID);
+
+	//Set primative Topology
+	SetPrimitiveType(pass.topology);
+
+	//Set resource binding
+	for (int i = 0; i < pass.bindingTable.size(); i++)
+	{
+		const ResourceBind &bind = pass.bindingTable[i];
+		resources.SetBinding(bind.stages, bind.flag, bind.slot, bind.resourceID);
+	}
+
+	//Render
+	map< int, ModelResource>::iterator it = modelList.begin();
+	while (it != modelList.end())
+	{
+		RenderModel(&(it->second));
+		it++;
+	}
+
+	//Unbind resources
+	for (int i = 0; i < pass.bindingTable.size(); i++)
+	{
+		const ResourceBind &bind = pass.bindingTable[i];
+		resources.SetBinding(bind.stages, bind.flag, bind.slot, -1);//Unbind
+	}
 }
 
 int GEngine::CreateSurfaceRec(float width, float hieght, float leftTopX, float leftTopY)

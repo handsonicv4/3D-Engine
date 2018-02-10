@@ -2,8 +2,6 @@
 
 #define MAX_SHADER_NUMBER 256
 #define MAX_SLOT_NUMBER 64
-#define MAX_STAGE_NUMBER 10
-#define MAX_BINDING_TYPE_NUMBER 10
 
 enum InputSlotDef
 {
@@ -36,12 +34,14 @@ enum TextureSlotDef
 	Slot_Texture_Specular = 3,
 	Slot_Texture_Depth = 4,
 	Slot_Texture_AnimMatrix = 5,
-	Slot_Texture_Instance=6,
-	Slot_Texture_Light = 7
+	Slot_Texture_Instance = 6,
+	Slot_Texture_Light = 7,
+	Slot_Texture_Voxel = 8,
 };
 enum SamplerSlotDef
 {
 	Slot_Sampler_Default= 0,
+	Slot_Sampler_Clamp = 1,
 };
 enum PiplineStage
 {
@@ -71,4 +71,11 @@ enum BindFlag
 	Bind_Video_Encoder = 0x400L
 };
 
-
+enum modelFlag
+{
+	Apply_Animation = 0x01,
+	Apply_Texture_Diffuse = 0x02,
+	Apply_Texture_Normal = 0x04,
+	Apply_Texture_Specular = 0x08,
+	Apply_Texture_Ambient = 0x10,
+};

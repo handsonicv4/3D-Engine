@@ -1,9 +1,11 @@
+//=====================ResourceManager ==========================
+//Author: Sentao
+//===========================================================
 #include"ResourceManager.h"
 
 ResourceManager::ResourceManager()
 {
-	memset(bindingTable, -1, sizeof(bindingTable));
-
+	currentDSV = NULL;
 	FormatSizeTable[DXGI_FORMAT_R32G32B32A32_TYPELESS] = 128;
 	FormatSizeTable[DXGI_FORMAT_R32G32B32A32_FLOAT] = 128;
 	FormatSizeTable[DXGI_FORMAT_R32G32B32A32_UINT] = 128;
@@ -167,17 +169,15 @@ UINT ResourceManager::GetBindFlags(ID3D11Resource * resource)
 		pTexture->GetDesc(&textureDesc);
 		return textureDesc.BindFlags;
 	}
-	return D3D11_BIND_FLAG();
-}
-UINT ResourceManager::GetIDByEnum(UINT enm)
-{
-	UINT id = 0;
-	while (enm > 1)
+	else if (type == D3D11_RESOURCE_DIMENSION_TEXTURE3D)
 	{
-		enm = enm >> 1;
-		id++;
+		D3D11_TEXTURE3D_DESC textureDesc;
+		ZeroMemory(&textureDesc, sizeof(textureDesc));
+		ID3D11Texture3D* pTexture = (ID3D11Texture3D*)resource;
+		pTexture->GetDesc(&textureDesc);
+		return textureDesc.BindFlags;
 	}
-	return id;
+	return 0;
 }
 void ResourceManager::Bind(UINT stages, D3D11_BIND_FLAG bindFlag, UINT startSlot, UINT numViews, void ** ptr, UINT elementStride, UINT offset)
 {
@@ -199,32 +199,46 @@ void ResourceManager::Bind(UINT stages, D3D11_BIND_FLAG bindFlag, UINT startSlot
 	else if (bindFlag == D3D11_BIND_UNORDERED_ACCESS)
 	{
 		ID3D11UnorderedAccessView** uav = (ID3D11UnorderedAccessView**)ptr;
-		deviceContextPtr->CSSetUnorderedAccessViews(startSlot, numViews, uav, NULL);
+		if (stages & Stage_Compute_Shader)
+		{
+			deviceContextPtr->CSSetUnorderedAccessViews(startSlot, numViews, uav, NULL);
+		}
+		if (stages&Stage_Output_Merge)
+		{
+			deviceContextPtr->OMSetRenderTargetsAndUnorderedAccessViews(D3D11_KEEP_RENDER_TARGETS_AND_DEPTH_STENCIL, NULL, NULL, startSlot, numViews, uav, NULL);
+		}
 	}
 	else if (bindFlag == D3D11_BIND_DEPTH_STENCIL)
 	{
 		ID3D11DepthStencilView** dsv = (ID3D11DepthStencilView**)ptr;
-		//Need to keep render targets unchanged
-		vector<ID3D11RenderTargetView*> oldrtvs = GetRenderTargets();
+
+		//Keep render targets unchanged
 		ID3D11RenderTargetView **rtvptr = NULL;
-		if (oldrtvs.size())
+		if (currentRTVs.size())
 		{
-			rtvptr = &oldrtvs[0];
+			rtvptr = &currentRTVs[0];
 		}
-		deviceContextPtr->OMSetRenderTargets(oldrtvs.size(), rtvptr, *dsv);
+		//Record new DSV
+		currentDSV = *dsv;
+		deviceContextPtr->OMSetRenderTargetsAndUnorderedAccessViews(currentRTVs.size(), rtvptr, *dsv, 4, D3D11_KEEP_UNORDERED_ACCESS_VIEWS, NULL, NULL);
 	}
 	else if (bindFlag == D3D11_BIND_RENDER_TARGET)
 	{
+		numViews = numViews > 8 ? 8 : numViews;
 		ID3D11DepthStencilView* dsv = NULL;
 		ID3D11RenderTargetView** rtv = (ID3D11RenderTargetView**)ptr;
-		UINT stageID = GetIDByEnum(Stage_Output_Merge);
-		UINT bindID = GetIDByEnum(D3D11_BIND_DEPTH_STENCIL);
-		int dsvID = bindingTable[stageID][bindID][0];
-		if (dsvID != -1)
+		//Keep current DSV
+		if (currentDSV)
 		{
-			dsv = (ID3D11DepthStencilView*)resourcePool[dsvID].viewPool[D3D11_BIND_DEPTH_STENCIL].ptr;
+				dsv = currentDSV;
 		}
-		deviceContextPtr->OMSetRenderTargets(numViews, rtv, dsv);
+		//Record new RTV
+		currentRTVs.clear();
+		for (int i = 0; i < numViews; i++)
+		{
+			currentRTVs.push_back(rtv[i]);
+		}
+		deviceContextPtr->OMSetRenderTargetsAndUnorderedAccessViews(numViews, rtv, dsv, 4, D3D11_KEEP_UNORDERED_ACCESS_VIEWS, NULL, NULL);
 	}
 	else if (bindFlag == D3D11_BIND_CONSTANT_BUFFER)
 	{
@@ -283,53 +297,6 @@ void ResourceManager::Bind(UINT stages, D3D11_BIND_FLAG bindFlag, UINT startSlot
 		}
 	}
 }
-vector<ID3D11RenderTargetView*> ResourceManager::GetRenderTargets()
-{
-	UINT stageID = GetIDByEnum(Stage_Output_Merge);
-	UINT bindID = GetIDByEnum(D3D11_BIND_RENDER_TARGET);
-	int* table = bindingTable[stageID][bindID];
-	vector<ID3D11RenderTargetView*> rtvs;
-	rtvs.reserve(MAX_SLOT_NUMBER);
-	for (int i = 0; table[i] != -1 && i < MAX_SLOT_NUMBER; i++)
-	{
-		ResourceData &data = resourcePool[table[i]];
-		ID3D11RenderTargetView* ptr = (ID3D11RenderTargetView*)data.viewPool[D3D11_BIND_RENDER_TARGET].ptr;
-		rtvs.push_back(ptr);
-	}
-	return rtvs;
-}
-bool ResourceManager::SetBindingTable(PiplineStage stage, D3D11_BIND_FLAG bindFlag, UINT slot, int id)
-{
-	UINT stageID = GetIDByEnum(stage);
-	UINT bindID = GetIDByEnum(bindFlag);
-	int oldID = bindingTable[stageID][bindID][slot];
-	if (oldID == id)
-	{
-		return false;//Already binded (avoid rebind)
-	}
-	if (oldID != -1)//Clear old resource binding map
-	{
-		resourcePool[oldID].viewPool[bindFlag].bindingMap[stage] = -1;
-	}
-	if (id != -1)//Set new resource binding map
-	{
-		resourcePool[id].viewPool[bindFlag].bindingMap[stage] = slot;
-	}
-	//Set global binding table
-	bindingTable[stageID][bindID][slot] = id;
-	return true;
-}
-void ResourceManager::UnbindView(ResourceView & view)
-{
-	map<PiplineStage, int> temp = view.bindingMap;//copy
-	map<PiplineStage, int>::iterator it = temp.begin();
-	while (it != temp.end())
-	{
-		if (it->second>-1)
-			SetBinding(it->first, (BindFlag)view.type, it->second, -1);
-		it++;
-	}
-}
 int ResourceManager::GenerateID()
 {
 	int i;
@@ -340,120 +307,7 @@ int ResourceManager::GenerateID()
 	}
 	return -1;
 }
-ID3D11ShaderResourceView * ResourceManager::CreateSRV(ID3D11Resource * resource)
-{
-	D3D11_RESOURCE_DIMENSION type;
-	resource->GetType(&type);
-	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
-	ZeroMemory(&srvDesc, sizeof(srvDesc));
 
-	if (type == D3D11_RESOURCE_DIMENSION_BUFFER)
-	{
-		D3D11_BUFFER_DESC bufferDesc;
-		ZeroMemory(&bufferDesc, sizeof(bufferDesc));
-		ID3D11Buffer * pBuffer = (ID3D11Buffer *)resource;
-		pBuffer->GetDesc(&bufferDesc);
-		if (!(bufferDesc.BindFlags&D3D11_BIND_SHADER_RESOURCE))
-		{
-			return NULL;
-		}
-		srvDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFEREX;
-		srvDesc.BufferEx.FirstElement = 0;
-		//Structured buffer only!!(Temporary)
-		if (bufferDesc.MiscFlags&D3D11_RESOURCE_MISC_BUFFER_STRUCTURED)
-		{
-			srvDesc.Format = DXGI_FORMAT_UNKNOWN;
-			srvDesc.BufferEx.NumElements = bufferDesc.ByteWidth / bufferDesc.StructureByteStride;
-		}
-		else
-		{
-			//Structured buffer only!!
-			return NULL;
-		}
-	}
-	else if (type == D3D11_RESOURCE_DIMENSION_TEXTURE2D)
-	{
-		D3D11_TEXTURE2D_DESC textureDesc;
-		ZeroMemory(&textureDesc, sizeof(textureDesc));
-		ID3D11Texture2D* pTexture = (ID3D11Texture2D*)resource;
-		pTexture->GetDesc(&textureDesc);
-		if (!(textureDesc.BindFlags&D3D11_BIND_SHADER_RESOURCE))
-		{
-			return NULL;
-		}
-		srvDesc.Format = textureDesc.Format;
-		srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-		srvDesc.Texture2D.MostDetailedMip = 0;
-		srvDesc.Texture2D.MipLevels = -1;
-	}
-
-	ID3D11ShaderResourceView * pSRV;
-	HRESULT hr = devicePtr->CreateShaderResourceView(resource, &srvDesc, &pSRV);
-	if (FAILED(hr))
-	{
-		return nullptr;
-	}
-
-	return pSRV;
-}
-ID3D11UnorderedAccessView * ResourceManager::CreateUAV(ID3D11Resource * resource)
-{
-
-	D3D11_RESOURCE_DIMENSION type;
-	resource->GetType(&type);
-	D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc;
-	ZeroMemory(&uavDesc, sizeof(uavDesc));
-
-	if (type == D3D11_RESOURCE_DIMENSION_BUFFER)
-	{
-
-		D3D11_BUFFER_DESC bufferDesc;
-		ZeroMemory(&bufferDesc, sizeof(bufferDesc));
-		ID3D11Buffer * pBuffer = (ID3D11Buffer *)resource;
-		pBuffer->GetDesc(&bufferDesc);
-		if (!(bufferDesc.BindFlags&D3D11_BIND_UNORDERED_ACCESS))
-		{
-			return NULL;
-		}
-		uavDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-		uavDesc.Buffer.FirstElement = 0;
-		//Structured buffer only!!
-		if (bufferDesc.MiscFlags&D3D11_RESOURCE_MISC_BUFFER_STRUCTURED)
-		{
-			uavDesc.Format = DXGI_FORMAT_UNKNOWN;
-			uavDesc.Buffer.NumElements = bufferDesc.ByteWidth / bufferDesc.StructureByteStride;
-		}
-		else
-		{
-			//Structured buffer only!!
-			return NULL;
-		}
-	}
-
-	else if (type == D3D11_RESOURCE_DIMENSION_TEXTURE2D)
-	{
-		D3D11_TEXTURE2D_DESC textureDesc;
-		ZeroMemory(&textureDesc, sizeof(textureDesc));
-		ID3D11Texture2D* pTexture = (ID3D11Texture2D*)resource;
-		pTexture->GetDesc(&textureDesc);
-		if (!(textureDesc.BindFlags&D3D11_BIND_UNORDERED_ACCESS))
-		{
-			return NULL;
-		}
-		uavDesc.Format = textureDesc.Format;
-		uavDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
-		uavDesc.Texture2D.MipSlice = 0;
-	}
-
-	ID3D11UnorderedAccessView * pUAV;
-	HRESULT hr = devicePtr->CreateUnorderedAccessView(resource, &uavDesc, &pUAV);
-	if (FAILED(hr))
-	{
-		return nullptr;
-	}
-
-	return pUAV;
-}
 D3D11_BUFFER_DESC ResourceManager::GenerateBufferDesc(UINT bindFlag, bool isDynamic, UINT size)
 {
 	D3D11_BUFFER_DESC desc;
@@ -483,6 +337,40 @@ D3D11_TEXTURE2D_DESC ResourceManager::GenerateTexture2Desc(UINT  bindFlag, DXGI_
 	desc.SampleDesc.Quality = 0;
 	desc.Height = height;
 	desc.Width = width;
+	desc.BindFlags = bindFlag;
+
+	if (hasMip)
+	{
+		desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
+		desc.MipLevels = 0;
+	}
+	else
+	{
+		desc.MiscFlags = 0;
+		desc.MipLevels = 1;
+	}
+	if (!isDynamic)
+	{
+		desc.Usage = D3D11_USAGE_DEFAULT;
+		desc.CPUAccessFlags = 0;
+	}
+	else
+	{
+		desc.Usage = D3D11_USAGE_DYNAMIC;
+		desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	}
+
+	return desc;
+}
+D3D11_TEXTURE3D_DESC ResourceManager::GenerateTexture3Desc(UINT bindFlag, DXGI_FORMAT format, bool isDynamic, bool hasMip, UINT width, UINT height, UINT depth)
+{
+	D3D11_TEXTURE3D_DESC desc;
+	ZeroMemory(&desc, sizeof(desc));
+	desc.MipLevels = 0;
+	desc.Format = format;
+	desc.Height = height;
+	desc.Width = width;
+	desc.Depth = depth;
 	desc.BindFlags = bindFlag;
 
 	if (hasMip)
@@ -553,18 +441,42 @@ ID3D11Texture2D * ResourceManager::CreateTexture2D(D3D11_TEXTURE2D_DESC & desc, 
 	}
 	return Texture;
 }
+ID3D11Texture3D * ResourceManager::CreateTexture3D(D3D11_TEXTURE3D_DESC & desc, void * pData)
+{
+	UINT pixelByte = FormatSizeTable[desc.Format] / 8;
+	if (pixelByte <= 0)
+		return NULL;
+	HRESULT hr;
+	ID3D11Texture3D* texture;
+	hr = devicePtr->CreateTexture3D(&desc, NULL, &texture);
+	if (FAILED(hr))
+	{
+		return NULL;
+	}
+
+	if (pData)
+	{
+		UINT rowpitch = desc.Width* pixelByte;
+		UINT depthpitch = rowpitch*desc.Height;
+		deviceContextPtr->UpdateSubresource(texture, 0, NULL, pData, rowpitch, depthpitch);
+	}
+	return texture;
+
+}
 bool ResourceManager::CreateViews(ResourceData &resource)
 {
 	UINT flags = GetBindFlags(resource.ptr);
 	ResourceView rview;
 	rview.stride = resource.stride;
+	HRESULT hr;
 	//Views
 	if (flags&D3D11_BIND_UNORDERED_ACCESS)
 	{
-		ID3D11UnorderedAccessView* uav;
-		uav = CreateUAV(resource.ptr);
-		if (!uav)
+		ID3D11UnorderedAccessView* uav=NULL;
+		hr=devicePtr->CreateUnorderedAccessView(resource.ptr, NULL, &uav);
+		if (FAILED(hr))
 		{
+			ClearViews(resource);
 			return false;
 		}
 		rview.ptr = uav;
@@ -573,9 +485,9 @@ bool ResourceManager::CreateViews(ResourceData &resource)
 	}
 	if (flags&D3D11_BIND_SHADER_RESOURCE)
 	{
-		ID3D11ShaderResourceView* srv;
-		srv = CreateSRV(resource.ptr);
-		if (!srv)
+		ID3D11ShaderResourceView* srv= NULL;
+		hr = devicePtr->CreateShaderResourceView(resource.ptr, NULL, &srv);
+		if (FAILED(hr))
 		{
 			ClearViews(resource);
 			return false;
@@ -587,7 +499,7 @@ bool ResourceManager::CreateViews(ResourceData &resource)
 	if (flags&D3D11_BIND_RENDER_TARGET)
 	{
 		ID3D11RenderTargetView* rtv;
-		HRESULT hr;
+
 		hr = devicePtr->CreateRenderTargetView(resource.ptr, NULL, &rtv);
 		if (FAILED(hr))
 		{
@@ -600,8 +512,7 @@ bool ResourceManager::CreateViews(ResourceData &resource)
 	}
 	if (flags&D3D11_BIND_DEPTH_STENCIL)
 	{
-		ID3D11DepthStencilView* dsv;
-		HRESULT hr;
+		ID3D11DepthStencilView* dsv=NULL;
 		hr = devicePtr->CreateDepthStencilView(resource.ptr, NULL, &dsv);
 		if (FAILED(hr))
 		{
@@ -644,7 +555,6 @@ void ResourceManager::ClearViews(ResourceData & resource)
 	map<D3D11_BIND_FLAG, ResourceView>::iterator it = resource.viewPool.begin();
 	while (it != resource.viewPool.end())
 	{
-		UnbindView(it->second);
 		if (it->first == D3D11_BIND_SHADER_RESOURCE ||
 			it->first == D3D11_BIND_UNORDERED_ACCESS ||
 			it->first == D3D11_BIND_RENDER_TARGET ||
@@ -765,33 +675,16 @@ bool ResourceManager::SetBinding(PiplineStage stage, BindFlag bindFlag, UINT sta
 		}
 	}
 
-	bool change = false;
+	Bind(stage, d3dbindFlag, startSlot, newView.size(), &newView[0], stride);
 
-	if (d3dbindFlag == D3D11_BIND_RENDER_TARGET || d3dbindFlag == D3D11_BIND_STREAM_OUTPUT)
-	{
-		//Set OM stage will lose all binding resource
-		for (int i = 0; i < MAX_SLOT_NUMBER; i++)
-		{
-			SetBindingTable(stage, d3dbindFlag, i, -1);
-		}
-		change = true;
-	}
-	for (int i = 0; i < idList.size(); i++)
-	{
-		change = SetBindingTable(stage, d3dbindFlag, startSlot + i, idList[i]) || change;
-	}
+	return true;
 
-
-	if (change|| stride!=-1)
-	{
-		Bind(stage, d3dbindFlag, startSlot, newView.size(), &newView[0], stride);
-	}
 }
 bool ResourceManager::SetBinding(PiplineStage stage, BindFlag bindFlag, UINT slot, int id)
 {
 	vector<int> temp;
 	temp.push_back(id);
-	//Bind(stage, bindFlag, slot, 1, (void**)&resourcePool[id].viewPool[bindFlag].ptr, resourcePool[id].stride);
+
 	return  SetBinding(stage, bindFlag, slot, temp);
 }
 int ResourceManager::CreateBuffer(UINT  bindFlags, bool isDynamic, UINT bufferSize, void * pData, UINT dataSize, UINT elementStride)
@@ -853,6 +746,37 @@ int ResourceManager::CreateTexture2D(UINT bindFlag, DXGI_FORMAT format,  bool is
 	rdata.ptr = texture;
 	rdata.stride = 0;
 	rdata.elementCount = 0;
+	if (!CreateViews(rdata))
+	{
+		rdata.ptr->Release();
+		return -1;
+	}
+	if (rdata.viewPool.count(D3D11_BIND_SHADER_RESOURCE) && rdata.viewPool.count(D3D11_BIND_RENDER_TARGET) && genMip)
+	{
+		ID3D11ShaderResourceView* srv = (ID3D11ShaderResourceView*)rdata.viewPool[D3D11_BIND_SHADER_RESOURCE].ptr;
+		deviceContextPtr->GenerateMips(srv);
+	}
+	resourcePool[id] = rdata;
+	return id;
+}
+int ResourceManager::CreateTexture3D(UINT bindFlag, DXGI_FORMAT format, bool isDynamic, bool genMip, UINT width, UINT height, UINT depth, void * pData)
+{
+	int id = GenerateID();
+	if (id == -1)
+	{
+		return -1;
+	}
+	ResourceData rdata;
+	D3D11_TEXTURE3D_DESC desc = GenerateTexture3Desc(bindFlag, format, isDynamic, genMip, width, height, depth);
+	ID3D11Texture3D* texture = CreateTexture3D(desc, pData);
+	if (!texture)
+	{
+		return -1;
+	}
+	rdata.ptr = texture;
+	rdata.stride = 0;
+	rdata.elementCount = 0;
+
 	if (!CreateViews(rdata))
 	{
 		rdata.ptr->Release();
@@ -957,6 +881,7 @@ vector<byte> ResourceManager::GetResourceData(UINT srcID, UINT * xLength, UINT *
 		ID3D11Texture1D* texture = (ID3D11Texture1D*)resource.ptr;
 		D3D11_TEXTURE1D_DESC desc;
 		texture->GetDesc(&desc);
+		UINT pixelByte = FormatSizeTable[desc.Format] / 8;
 		if (desc.Usage == D3D11_USAGE_STAGING && (desc.CPUAccessFlags&D3D11_CPU_ACCESS_READ))
 		{
 			stagingRC = texture;
@@ -1033,20 +958,22 @@ vector<byte> ResourceManager::GetResourceData(UINT srcID, UINT * xLength, UINT *
 			desc.Usage = D3D11_USAGE_STAGING;
 			desc.BindFlags = 0;
 			desc.MiscFlags = 0;
+			//desc.MipLevels = 1;
 			hr = devicePtr->CreateTexture3D(&desc, NULL, (ID3D11Texture3D**)&stagingRC);
 			if (FAILED(hr))
 			{
 				return data;
 			}
+			deviceContextPtr->GenerateMips((ID3D11ShaderResourceView*)resource.viewPool[D3D11_BIND_SHADER_RESOURCE].ptr);
 			deviceContextPtr->CopyResource(stagingRC, texture);
 		}
-		hr = deviceContextPtr->Map(stagingRC, 0, D3D11_MAP_READ, 0, &MappedResource);
+		hr = deviceContextPtr->Map(stagingRC, 4, D3D11_MAP_READ, 0, &MappedResource);
 		if (FAILED(hr))
 		{
 			return data;
 		}
 		x = MappedResource.RowPitch;
-		y = MappedResource.DepthPitch;
+		y = MappedResource.DepthPitch/ MappedResource.RowPitch *pixelByte;
 		z = desc.Depth*pixelByte;
 	}
 
@@ -1070,6 +997,20 @@ vector<byte> ResourceManager::GetResourceData(UINT srcID, UINT * xLength, UINT *
 
 	return data;
 }
+void ResourceManager::ResetUAV(UINT id, const float value[4])
+{
+	if (resourcePool.count(id)&& resourcePool[id].viewPool.count(D3D11_BIND_UNORDERED_ACCESS))
+	{
+		deviceContextPtr->ClearUnorderedAccessViewFloat((ID3D11UnorderedAccessView*)resourcePool[id].viewPool[D3D11_BIND_UNORDERED_ACCESS].ptr, value);
+	}
+}
+void ResourceManager::ResetUAV(UINT id, const UINT value[4])
+{
+	if (resourcePool.count(id) && resourcePool[id].viewPool.count(D3D11_BIND_UNORDERED_ACCESS))
+	{
+		deviceContextPtr->ClearUnorderedAccessViewUint((ID3D11UnorderedAccessView*)resourcePool[id].viewPool[D3D11_BIND_UNORDERED_ACCESS].ptr, value);
+	}
+}
 void ResourceManager::ResetRTV(UINT id, const float color[4])
 {
 	if (!resourcePool.count(id) || !resourcePool[id].viewPool.count(D3D11_BIND_RENDER_TARGET))
@@ -1087,6 +1028,15 @@ void ResourceManager::ResetDSV(UINT id, D3D11_CLEAR_FLAG flag, float depth, UINT
 	}
 	ID3D11DepthStencilView* dsv = (ID3D11DepthStencilView*)resourcePool[id].viewPool[D3D11_BIND_DEPTH_STENCIL].ptr;
 	deviceContextPtr->ClearDepthStencilView(dsv, flag, depth, stencil);
+}
+bool ResourceManager::GenerateMipMap(UINT id)
+{
+	if (resourcePool.count(id)&& resourcePool[id].viewPool.count(D3D11_BIND_SHADER_RESOURCE))
+	{
+		ID3D11ShaderResourceView* srv = (ID3D11ShaderResourceView*)resourcePool[id].viewPool[D3D11_BIND_SHADER_RESOURCE].ptr;
+		deviceContextPtr->GenerateMips(srv);
+	}
+	return false;
 }
 void ResourceManager::Clear(UINT id)
 {
@@ -1108,5 +1058,5 @@ void ResourceManager::Clear()
 		it++;
 	}
 	resourcePool.clear();
-	memset(bindingTable, -1, sizeof(bindingTable));
+
 }

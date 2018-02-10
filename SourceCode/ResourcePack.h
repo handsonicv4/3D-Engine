@@ -47,6 +47,16 @@ public:
 	int specularMap;
 	int ambientMap;
 	int normalMap;
+
+	float diffusePower;
+	float specularHardness;
+	float specularPower;
+	float emissivity;
+	float refractiveIndex;
+	float diffuseColor[3];
+	float ambientColor[3];
+	float specularColor[3];
+	float opacity;
 };
 inline MaterialResource::MaterialResource()
 {
@@ -54,6 +64,22 @@ inline MaterialResource::MaterialResource()
 	specularMap = -1;
 	ambientMap = -1;
 	normalMap = -1;
+
+	diffusePower=1;
+	specularHardness=1;
+	specularPower = 1;
+	emissivity = 0;
+	refractiveIndex = 1;
+	diffuseColor[0] = 1;
+	diffuseColor[1] = 1;
+	diffuseColor[2] = 1;
+	ambientColor[0] = 1;
+	ambientColor[1] = 1;
+	ambientColor[2] = 1;
+	specularColor[0] = 1;
+	specularColor[1] = 1;
+	specularColor[2] = 1;
+	opacity = 1;
 }
 
 class ModelResource

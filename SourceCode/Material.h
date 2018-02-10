@@ -9,6 +9,13 @@ public:
 	Material();
 	string name;
 	float shininess;
+
+	float diffusePower;
+	float specularHardness;
+	float specularPower;
+	float emissivity;
+	float refractiveIndex;;
+
 	float diffuse[4];
 	float ambient[4];
 	float specular[4];

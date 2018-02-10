@@ -1,10 +1,8 @@
-//=====================ShaderManager V 0.7========================
-//Copy right belongs to Sentao Li
+//-------------------------------Shader Manager-------------------------------
+//Provide shader and Inputlayout management
+//Author: Sentao
+//--------------------------------------------------------------------------------
 
-/*======================General description=========================
-Manage D3D shaders and inputlayout (Just support vertex shader, pixel shader and compute shader for now)
-
-*/
 #pragma once
 #include <d3d11_1.h>
 #include <D3Dcompiler.h>
@@ -15,77 +13,72 @@ using namespace std;
 #pragma comment(lib, "D3DCompiler.lib")
 #pragma comment(lib, "dxguid.lib" )
 
-struct InputLayout
+struct ShaderType
 {
-	ID3D11InputLayout* ptr = NULL;
-	vector<D3D11_INPUT_ELEMENT_DESC> desc;
-};
-
-struct VertexShader
-{
-	ID3D11VertexShader* ptr = NULL;
-	int inputLayoutID=-1;
-};
-
-struct PixelShader
-{
-	ID3D11PixelShader* ptr = NULL;
-};
-
-struct ComputeShader
-{
-	ID3D11ComputeShader* ptr = NULL;
+	IUnknown *ptr = NULL;
 };
 
 class ShaderManager
 {
-	friend class GEngine;
-public:
-	ShaderManager();
-	ShaderManager(ID3D11Device* devicePtr,	ID3D11DeviceContext* deviceContextPtr);
-	~ShaderManager();
-	void DeleteVertexShader(UINT id);
-	void DeletePixelShader(UINT id);
-	void DeleteComputeShader(UINT id);
-	void ClearVertexShader();
-	void ClearPixelShader();
-	void ClearComputeShader();
-	void Clear();
-	int CreateVertexShader(string fileName, string entryPoint);
-	int CreatePixelShader(string fileName, string entryPoint);
-	int CreateComputeShader(string fileName, string entryPoint);
-	void ActivateVertexShader(int id);
-	void ActivatePixelShader(int id);
-	void ActivateComputeShader(int id);
-private:
+protected:
+	map<UINT, ShaderType> shaderPool;
 	string version;
-	//string uniformEntryPoint;
-	int activeVS;
-	int activePS;
-	int activeIL;
-	int activeCS;
+	int activeShaderID;
+	int GenerateID();
+
 	ID3D11Device* devicePtr;
 	ID3D11DeviceContext* deviceContextPtr;
-	map<UINT, VertexShader> vertexShaderPool;
-	map<UINT, PixelShader> pixelShaderPool;
-	map<UINT, InputLayout> inputLayoutPool;
-	map<UINT, ComputeShader> computeShaderPool;
+	static ID3DBlob * Compile(wstring fileName, string entryPoint, string target);
+	static ID3DBlob * Compile(string fileName, string entryPoint, string target);
+	virtual ShaderType CreateFromFile(string fileName, string entryPoint) = 0;
 
-	int GetInputLayout(ID3DBlob* compiledShader);
-	ID3DBlob * Compile(wstring fileName, string entryPoint, string target);
-	ID3DBlob * Compile(string fileName, string entryPoint, string target);
-	int GenerateVSID();
-	int GeneratePSID();
-	int GenerateILID();
-	int GenerateCSID();
-};
-
-class Pass
-{
 public:
-	int vSIndex;
-	int pSIndex;
-	Pass(int vIndex, int pIndex);
-	Pass();
+	ShaderManager();
+	void Init(ID3D11Device* devicePtr, ID3D11DeviceContext* deviceContextPtr);
+	ShaderManager(ID3D11Device* devicePtr, ID3D11DeviceContext* deviceContextPtr);
+	virtual ~ShaderManager();
+	void Delete(UINT id);
+	void Clear();
+	int Create(string fileName, string entryPoint);
+	virtual void Activate(int id) = 0;
 };
 
+class InputLayout :public ShaderManager
+{
+protected:
+	ShaderType CreateFromFile(string fileName, string entryPoint) override;
+public:
+	void Activate(int id) override;
+};
+
+class VertexShader :public ShaderManager
+{
+protected:
+	ShaderType CreateFromFile(string fileName, string entryPoint) override;
+public:
+	void Activate(int id) override;
+};
+
+class PixelShader :public ShaderManager
+{
+protected:
+	ShaderType CreateFromFile(string fileName, string entryPoint) override;
+public:
+	void Activate(int id) override;
+};
+
+class ComputeShader :public ShaderManager
+{
+protected:
+	ShaderType CreateFromFile(string fileName, string entryPoint) override;
+public:
+	void Activate(int id) override;
+};
+
+class GeometryShader :public ShaderManager
+{
+protected:
+	ShaderType CreateFromFile(string fileName, string entryPoint) override;
+public:
+	void Activate(int id) override;
+};

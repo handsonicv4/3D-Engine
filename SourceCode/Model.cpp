@@ -406,16 +406,16 @@ void Model::LoadMesh(const aiScene * source)
 			{
 				unsigned int vindex = maxBonePerVertex*vertexID;
 				//If bones number exceed the limit
-				if (boneWeights[vertexID].size() > maxBonePerVertex)
+				if (true)
 				{
 					float sum = 0;
 					sort(boneWeights[vertexID].begin(), boneWeights[vertexID].end(), CompWieght);
-					for (int z = 0; z < maxBonePerVertex; z++)//per binded bone loop, get the sum of usefull weight
+					for (int z = 0; z < maxBonePerVertex&&z<boneWeights[vertexID].size(); z++)//per binded bone loop, get the sum of usefull weight
 					{
 						sum += boneWeights[vertexID][z].second;
 					}
 
-					for (int z = 0; z < maxBonePerVertex; z++)
+					for (int z = 0; z < maxBonePerVertex&&z<boneWeights[vertexID].size(); z++)
 					{
 						mesh.vertexBindID[vindex + z] = boneWeights[vertexID][z].first;
 						mesh.vertexBindWight[vindex + z] = boneWeights[vertexID][z].second / sum; //normalize weight
@@ -522,6 +522,12 @@ void Model::LoadMaterial(const aiScene * source)
 	}
 
 }
+
+Model::Model()
+{
+	hasAnimation = false;
+	maxBonePerVertex = 4;
+}
 Instance * Model::CreateInstance()
 {
 	unsigned int i;
@@ -556,28 +562,44 @@ void Model::Purge()
 	}
 }
 
+InstanceMaterial::InstanceMaterial()
+{
+	diffusePower = 1;
+	specularHardness = 1;
+	specularPower = 0;
+	emissivity = 0;
+	refractiveIndex = 1;
+	diffuseColor[0] = 1;
+	diffuseColor[1] = 1;
+	diffuseColor[2] = 1;
+	emissiveColor[0] = 1;
+	emissiveColor[1] = 1;
+	emissiveColor[2] = 1;
+	specularColor[0] = 1;
+	specularColor[1] = 1;
+	specularColor[2] = 1;
+	opacity=1;
+	textureEnableFlags=0xFF;
+}
+
 Instance::Instance(Model *model, unsigned int id)
 {
 	animationID = 0;
 	animationTime = 0;
-	//position = aiVector3D(0, 0, 0);
-	//scaling = 1;
-	//rotation = aiVector3D(0, 0, 0);
 	instanceID = id;
+	useInstanceMaterial = false;
 	visable = true;
-	color = aiColor4D(0, 0, 0, 0);
+
 	this->model = model;
 }
 Instance::Instance()
 {
 	animationID = -1;
 	animationTime = 0;
-	//position = aiVector3D(0, 0, 0);
-	//scaling = 1;
-	//rotation = aiVector3D(0, 0, 0);
 	visable = true;
+	useInstanceMaterial = false;
 	instanceID = 0;
-	color = aiColor4D(0, 0, 0, 0);
+
 	this->model = NULL;
 }
 double Instance::GetAnimationDuration()

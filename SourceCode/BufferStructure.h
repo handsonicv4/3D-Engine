@@ -1,26 +1,45 @@
+//GPU ralated buffer and structure definaiton
+//-Author Sentao
 #pragma once
 
 struct FrameBufferData
 {
 	float	projection[16];
+
 	float	projectionInv[16];
+
 	float	cameraPos[3];
 	float alphaTest;
+
 	UINT screenDimensions[2];
 	UINT numLights;
 	UINT maxNumLightsPerTile;
+
+	UINT voxelDimention[3];
+	float pad1;
+
+	float voxelSize[3];
+	float pad2;
+
 };
 
 struct ObjBufferData
 {
-	UINT HasAmbientMap;
-	UINT HasDiffuseMap;
-	UINT HasNormalMap;
-	UINT HasSpecularMap;
+	UINT flags;
+	float alphaFactor;
+	float diffusePower;
+	float specularHardness;
 
-	UINT HasAnimation;
-	UINT Transparent;
-	float pad[2];
+	float diffuseColor[3];
+	float specularPower;
+
+	float specularColor[3];
+	float emissivity;
+
+	float ambientColor[3];
+	float refractiveIndex;
+
+
 };
 
 struct InstanceData
@@ -29,6 +48,7 @@ struct InstanceData
 	float world[16];
 	float color[4];
 	unsigned int bindMatrixOffset;
+	unsigned int instanceMaterialID;
 };
 
 struct Light
@@ -37,15 +57,4 @@ struct Light
 	float direction[3];//sport, directional
 	float angleCos;
 	//float range;//sport, point
-};
-
-struct Plane
-{
-	float normal[3];
-	float dist;
-};
-
-struct Frustum
-{
-	Plane planes[4];   // top, right, bottom, left  frustum planes.
 };

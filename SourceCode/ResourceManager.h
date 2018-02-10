@@ -1,5 +1,5 @@
-//=====================ResourceManager V 0.7========================
-//Copy right belongs to Sentao Li
+//=====================ResourceManager ==========================
+//Author: Sentao
 /*
 =====================General description===========================
 The purpose of ResourceManager is to provide a friendly and easy way to manage D3D pipline 
@@ -99,28 +99,23 @@ private:
 	//Resource Pool
 	map<UINT, ResourceData> resourcePool;
 	map<DXGI_FORMAT, unsigned int> FormatSizeTable;
-	//Binding Table
-	int bindingTable[MAX_STAGE_NUMBER][MAX_BINDING_TYPE_NUMBER][MAX_SLOT_NUMBER];
 
 	//Other globles
 	D3D11_BOX box1D;
-
+	ID3D11DepthStencilView* currentDSV;
+	vector<ID3D11RenderTargetView*> currentRTVs;
 	//=================binding=======================
 	UINT GetBindFlags(ID3D11Resource* resource);
-	UINT GetIDByEnum(UINT enm);
 	void Bind(UINT stages, D3D11_BIND_FLAG bindFlag, UINT startSlot, UINT numViews, void** ptr, UINT elementStride = 0, UINT offset = 0);
-	vector<ID3D11RenderTargetView*> GetRenderTargets();
-	bool SetBindingTable(PiplineStage stage, D3D11_BIND_FLAG bindFlag, UINT slot, int id);
-	void UnbindView(ResourceView& view);
 
 	//=================Creation======================
 	int GenerateID();
-	ID3D11UnorderedAccessView* CreateUAV(ID3D11Resource* resource);
-	ID3D11ShaderResourceView* CreateSRV(ID3D11Resource* resource);
 	D3D11_BUFFER_DESC GenerateBufferDesc(UINT  bindFlag, bool isDynamic, UINT size);
 	D3D11_TEXTURE2D_DESC GenerateTexture2Desc(UINT  bindFlag, DXGI_FORMAT format, bool isDynamic, bool hasMip, UINT width, UINT height);
+	D3D11_TEXTURE3D_DESC GenerateTexture3Desc(UINT  bindFlag, DXGI_FORMAT format, bool isDynamic, bool hasMip, UINT width, UINT height, UINT depth);
 	ID3D11Buffer* CreateBuffer(D3D11_BUFFER_DESC& desc, void* pData, UINT dataSize);
 	ID3D11Texture2D* CreateTexture2D(D3D11_TEXTURE2D_DESC& desc, void* pData = NULL);
+	ID3D11Texture3D* CreateTexture3D(D3D11_TEXTURE3D_DESC& desc, void* pData = NULL);
 	bool CreateViews(ResourceData &resource);
 	void ClearViews(ResourceData& resource);
 
@@ -138,11 +133,16 @@ public:
 
 	int CreateBuffer(UINT bindFlags, bool isDynamic, UINT bufferSize, void* pData = NULL, UINT dataSize = 0, UINT elementStride = 0);
 	int CreateTexture2D(UINT  bindFlag, DXGI_FORMAT format, bool isDynamic, bool genMip, UINT width, UINT height, void* pData = NULL);
+	int CreateTexture3D(UINT  bindFlag, DXGI_FORMAT format, bool isDynamic, bool genMip, UINT width, UINT height, UINT depth, void* pData = NULL);
+
 	int CreateBackBuffer(IDXGISwapChain* pSwapChain);
 
 	bool UpdateResourceData(UINT resourceID, void* pData, UINT size);
 	void CopyResourceData(UINT srcID, UINT dstID);
 	vector<byte> GetResourceData(UINT srcID, UINT* xLength, UINT* yLength, UINT* zLength);
+	void ResetUAV(UINT id, const float value[4]);
+	void ResetUAV(UINT id, const UINT value[4]);
+	bool GenerateMipMap(UINT id);
 
 	void ResetRTV(UINT id, const float color[4]);
 	void ResetDSV(UINT id, D3D11_CLEAR_FLAG flag, float depth, UINT8 stencil);
