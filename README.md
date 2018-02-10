@@ -1,7 +1,7 @@
 # 3D-Engine
 https://youtu.be/owLLfnTd2oo
 
-![image](https://github.com/handsonicv4/3D-Engine/raw/master/img/c1.PNG)
+![image](https://github.com/handsonicv4/3D-Engine/raw/master/img/c1.png)
 
 ![image](https://github.com/handsonicv4/3D-Engine/raw/master/img/GIF.gif)
 
