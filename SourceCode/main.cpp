@@ -72,12 +72,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT umessage, WPARAM wparam, LPARAM lparam)
 			if (instants[1]->material.opacity < 1)
 			{
 				instants[1]->material.opacity = 1;
-				instants[1]->material.specularPower = 3;
 			}
 			else
 			{
 				instants[1]->material.opacity = 0.1;
-				instants[1]->material.specularPower = 3;
 			}
 		}
 		break;
@@ -231,20 +229,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 	voxelization.bindingTable.push_back(voxelTexture);
 	
 	Pass visualization;
-	visualization.vertexShaderID = engine.vertexShader.Create(workingFolder + "Shaders\\voxelization\\vis.hlsl", "main");
-	visualization.geometryShaderID = engine.geometryShader.Create(workingFolder + "Shaders\\voxelization\\vgs.hlsl", "main");
-	visualization.pixelShaderID = engine.pixelShader.Create(workingFolder + "Shaders\\voxelization\\vps.hlsl", "main");
-	visualization.rasterizer.CullMode = D3D11_CULL_NONE;
-	visualization.blend.RenderTarget[0].BlendEnable = true;
-	visualization.viewPort.Height = (float)engine.resolutionY;
-	visualization.viewPort.Width = (float)engine.resolutionX;
-	visualization.topology = D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
-	ResourceBind voxelView;
-	voxelView.flag = Bind_Shader_Resource;
-	voxelView.stages = Stage_Geometry_Shader;
-	voxelView.slot = 0;
-	voxelView.resourceID = vtex;
-	visualization.bindingTable.push_back(voxelView);
+	//visualization.vertexShaderID = engine.vertexShader.Create(workingFolder + "Shaders\\voxelization\\vis.hlsl", "main");
+	//visualization.geometryShaderID = engine.geometryShader.Create(workingFolder + "Shaders\\voxelization\\vgs.hlsl", "main");
+	//visualization.pixelShaderID = engine.pixelShader.Create(workingFolder + "Shaders\\voxelization\\vps.hlsl", "main");
+	//visualization.rasterizer.CullMode = D3D11_CULL_NONE;
+	//visualization.blend.RenderTarget[0].BlendEnable = true;
+	//visualization.viewPort.Height = (float)engine.resolutionY;
+	//visualization.viewPort.Width = (float)engine.resolutionX;
+	//visualization.topology = D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
+	//ResourceBind voxelView;
+	//voxelView.flag = Bind_Shader_Resource;
+	//voxelView.stages = Stage_Geometry_Shader;
+	//voxelView.slot = 0;
+	//voxelView.resourceID = vtex;
+	//visualization.bindingTable.push_back(voxelView);
 
 	Pass coneTracing;
 	coneTracing.vertexShaderID = directLight.vertexShaderID;
@@ -325,12 +323,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 	Instance *in1 = bmodel.CreateInstance();
 	in1->SetScaling(0.7);
 	in1->SpinPitch(-89);
-	in1->SetPosition(0,-4.5,-1);
+	in1->SetPosition(1,-4.5,-1);
 	in1->useInstanceMaterial = true;
 	in1->material.opacity = 0.1;
 	in1->material.refractiveIndex = 1.5;
 	in1->material.textureEnableFlags = 0x00;
-
+	in1->material.specularHardness = 30;
+	in1->material.specularPower = 3;
 	Instance *in = amodel.CreateInstance();
 	in->animationID = 0;
 	in->animationTime = 0;
@@ -421,7 +420,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 	k2->material.emissiveColor[1] = 0.9;
 	k2->material.emissiveColor[2] = 0.4;
 
-	k3->SetPosition(-3, 0, -2);
+	k3->SetPosition(-2, 0, -2);
 	k3->SetScaling(2);
 	k3->verticalLock = false;
 	k3->SpinRoll(45);

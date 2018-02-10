@@ -487,36 +487,28 @@ void Model::LoadMaterial(const aiScene * source)
 		srcMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &textureFileName);
 		if (textureFileName.length)
 		{
-			if (!material.diffuseMap.LoadFromFile(folderPath + textureFileName.C_Str()))
-				Message("Diffuse Texture error", 1);
-			else
+			if (material.diffuseMap.LoadFromFile(folderPath + textureFileName.C_Str()))
 				material.hasDiffuseMap = true;
 		}
 		textureFileName.Clear();
 		srcMaterial->GetTexture(aiTextureType_SPECULAR, 0, &textureFileName);
 		if (textureFileName.length)
 		{
-			if (!material.specularMap.LoadFromFile(folderPath + textureFileName.C_Str()))
-				Message("Specular Texture error", 1);
-			else
+			if (material.specularMap.LoadFromFile(folderPath + textureFileName.C_Str()))
 				material.hasSpecularMap = true;
 		}
 		textureFileName.Clear();
 		srcMaterial->GetTexture(aiTextureType_AMBIENT, 0, &textureFileName);
 		if (textureFileName.length)
 		{
-			if (!material.ambientMap.LoadFromFile(folderPath + textureFileName.C_Str()))
-				Message("Ambient Texture error", 1);
-			else
+			if (material.ambientMap.LoadFromFile(folderPath + textureFileName.C_Str()))
 				material.hasAmbientMap = true;
 		}
 		textureFileName.Clear();
 		srcMaterial->GetTexture(aiTextureType_NORMALS, 0, &textureFileName);
 		if (textureFileName.length)
 		{
-			if (!material.normalMap.LoadFromFile(folderPath + textureFileName.C_Str()))
-				Message("Normal Texture error", 1);
-			else
+			if (material.normalMap.LoadFromFile(folderPath + textureFileName.C_Str()))
 				material.hasNormalMap = true;
 		}
 	}
