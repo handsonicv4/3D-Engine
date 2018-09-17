@@ -1,0 +1,9 @@
+{
+  "name": "voxel_texture",
+  "type": "texture3d",
+  "size": [ 64, 64, 64 ],
+  "bind_flag": [ "shader_resource", "render_target", "unordered_access" ],
+  "access": "default",
+  "mip_level": 0,
+  "format": "r8g8b8a8_unorm"
+}

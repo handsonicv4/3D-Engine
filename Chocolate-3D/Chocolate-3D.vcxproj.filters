@@ -1,0 +1,132 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="头文件\pipeline">
+      <UniqueIdentifier>{0da465e9-0b35-41e1-a7ef-6ba5d5a65591}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\pipeline">
+      <UniqueIdentifier>{f83ea962-13fa-44b8-8a7e-a6ed08a8f2e1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\asset">
+      <UniqueIdentifier>{106ad3f2-1fd1-498b-97c7-b3f0deed2735}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\asset">
+      <UniqueIdentifier>{6c483d0a-0c9e-4d54-9eaa-bbd92b0aa5ac}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\third party">
+      <UniqueIdentifier>{8db5e84e-f85a-408a-b53f-91fe2261e94a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\common">
+      <UniqueIdentifier>{6a9853ea-b367-4c79-bdf9-03915a75853f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\common">
+      <UniqueIdentifier>{3866ded7-80dc-47b1-a610-c794d0f618be}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pipeline\D3Def.h">
+      <Filter>头文件\pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="pipeline\DescFileLoader.h">
+      <Filter>头文件\pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="pipeline\Pass.h">
+      <Filter>头文件\pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="pipeline\ResourceManager.h">
+      <Filter>头文件\pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="pipeline\ShaderManager.h">
+      <Filter>头文件\pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="pipeline\StateManager.h">
+      <Filter>头文件\pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="asset\Model.h">
+      <Filter>头文件\asset</Filter>
+    </ClInclude>
+    <ClInclude Include="asset\Texture.h">
+      <Filter>头文件\asset</Filter>
+    </ClInclude>
+    <ClInclude Include="asset\Material.h">
+      <Filter>头文件\asset</Filter>
+    </ClInclude>
+    <ClInclude Include="common\Usefull.h">
+      <Filter>头文件\common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\Singleton.h">
+      <Filter>头文件\common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\IDContainer.h">
+      <Filter>头文件\common</Filter>
+    </ClInclude>
+    <ClInclude Include="GEngine.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Simple_window.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="BufferStructure.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="ResourcePack.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="pipeline\Pipeline.h">
+      <Filter>头文件\pipeline</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pipeline\DescFileLoader.cpp">
+      <Filter>源文件\pipeline</Filter>
+    </ClCompile>
+    <ClCompile Include="pipeline\Pass.cpp">
+      <Filter>源文件\pipeline</Filter>
+    </ClCompile>
+    <ClCompile Include="pipeline\ResourceManager.cpp">
+      <Filter>源文件\pipeline</Filter>
+    </ClCompile>
+    <ClCompile Include="pipeline\ShaderManager.cpp">
+      <Filter>源文件\pipeline</Filter>
+    </ClCompile>
+    <ClCompile Include="pipeline\StateManager.cpp">
+      <Filter>源文件\pipeline</Filter>
+    </ClCompile>
+    <ClCompile Include="include\json11\json11.cpp">
+      <Filter>源文件\third party</Filter>
+    </ClCompile>
+    <ClCompile Include="asset\Model.cpp">
+      <Filter>源文件\asset</Filter>
+    </ClCompile>
+    <ClCompile Include="asset\Texture.cpp">
+      <Filter>源文件\asset</Filter>
+    </ClCompile>
+    <ClCompile Include="asset\Material.cpp">
+      <Filter>源文件\asset</Filter>
+    </ClCompile>
+    <ClCompile Include="common\Usefull.cpp">
+      <Filter>源文件\common</Filter>
+    </ClCompile>
+    <ClCompile Include="GEngine.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="test.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="pipeline\Pipeline.cpp">
+      <Filter>源文件\pipeline</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
