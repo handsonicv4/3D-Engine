@@ -78,13 +78,15 @@ bool GEngine::InitBuffers()
 	if (depthStencilBufferID == -1)
 		return false;
 
-	//Constant Buffer PerFrame
+	
 	ResourceDesc descCB;
-	descCB.name = "FrameBuffer";
 	descCB.type = Resource_Buffer;
 	descCB.access = Access_Dynamic;
-	descCB.size[0] = sizeof(FrameBufferData);
 	descCB.bindFlag = Bind_Constant_Buffer;
+
+	//Constant Buffer PerFrame
+	descCB.name = "FrameBuffer";
+	descCB.size[0] = sizeof(FrameBufferData);
 	frameBufferID = PipeLine::Resources().Create(descCB);
 
 	if (frameBufferID == -1)
@@ -98,11 +100,12 @@ bool GEngine::InitBuffers()
 		return false;
 
 	ResourceDesc descSRV;
-	//BindMatrix Buffer 
-	descSRV.name = "BindMatrixBuffer";
 	descSRV.type = Resource_Buffer;
 	descSRV.access = Access_Dynamic;
 	descSRV.bindFlag = Bind_Shader_Resource;
+
+	//BindMatrix Buffer 
+	descSRV.name = "BindMatrixBuffer";
 	descSRV.size[0] = numBonePerBatch * sizeof(float[16]);
 	descSRV.elementStride = sizeof(float[16]);
 	animationMatrixBufferID = PipeLine::Resources().Create(descSRV);
