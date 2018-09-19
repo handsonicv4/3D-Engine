@@ -22,6 +22,24 @@ struct BindingRule
 	BindingRule();
 };
 
+struct Operation
+{
+	OperationType type;
+	UINT threadSize[3];
+	UINT resourceID;
+	UINT value[4];
+	Operation();
+};
+
+enum OperationType
+{
+	Draw,
+	Compute,
+	Generate_Mip,
+	Reset,
+	Copy
+};
+
 struct Pass
 {
 	int vertexShaderID;
@@ -33,10 +51,9 @@ struct Pass
 	int bendStateID;
 	int viewPortID;
 	vector<BindingRule> samplerBinding;
+	vector<BindingRule> resourceBinding;//Engine will unbind those resources from pipline after rendering
 	D3D_PRIMITIVE_TOPOLOGY topology;
-
-	//Engine will unbind those resources from pipline after rendering
-	vector<BindingRule> resourceBinding;
+	vector<Operation> operations;
 
 	Pass();
 };

@@ -54,10 +54,11 @@ bool GEngine::Init(HWND window, bool fullscreen)
 	if (!result)
 		return false;
 
-	int def = PipeLine::SamplerState().CreateFromFile("");
-	PipeLine::SamplerState().Apply(def, 0xffff, Slot_Sampler_Default);
-	int clamp = PipeLine::SamplerState().CreateFromFile("clamp");
-	PipeLine::SamplerState().Apply(clamp, 0xffff, Slot_Sampler_Clamp);
+
+	//int def = PipeLine::SamplerState().CreateFromFile("");
+	//PipeLine::SamplerState().Apply(def, 0xffff, Slot_Sampler_Default);
+	//int clamp = PipeLine::SamplerState().CreateFromFile("clamp");
+	//PipeLine::SamplerState().Apply(clamp, 0xffff, Slot_Sampler_Clamp);
 	PipeLine::SetPrimitiveType(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	return true;
 }
@@ -582,16 +583,6 @@ void GEngine::Render()
 
 void GEngine::Render(const Pass &pass)
 {
-	//Set status and view port
-	/*
-	states.blend = pass.blend;
-	states.depthStencil = pass.depthStencil;
-	states.rasterizor = pass.rasterizer;
-
-	states.UpdateBlendState();
-	states.UpdateDepthStencilState();
-	states.UpdateRasterizorState();
-	*/
 	PipeLine::DepthStencilState().Apply(pass.depthStencilStateID, 1);
 	float bf[] = { 1,1,1,1 };
 	PipeLine::BlendState().Apply(pass.bendStateID, bf, 0xffffffff);
@@ -613,6 +604,12 @@ void GEngine::Render(const Pass &pass)
 	{
 		const BindingRule &bind = pass.resourceBinding[i];
 		PipeLine::Resources().SetBinding(bind.stages, bind.flag, bind.slot, bind.resourceID);
+	}
+	
+	//Set sampler binding
+	for (auto& binding : pass.samplerBinding) 
+	{
+		PipeLine::SamplerState().Apply(binding.resourceID, binding.stages, binding.slot);
 	}
 
 	//Render

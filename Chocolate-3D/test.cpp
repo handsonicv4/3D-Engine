@@ -216,6 +216,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 	vpd = FileLoader::LoadViewPort(workingFolder + "Effects\\States\\VP_64.json");
 	int vp64 = PipeLine::ViewPort().Create(vpd);
 
+	SamplerDesc sd = FileLoader::LoadSamplerDesc(workingFolder + "Effects\\States\\SS_Default.json");
+	int def = PipeLine::SamplerState().Create(sd);
+	PipeLine::SamplerState().Apply(def, 0xffff, Slot_Sampler_Default);
+	sd = FileLoader::LoadSamplerDesc(workingFolder + "Effects\\States\\SS_Clamp.json");
+	int clamp = PipeLine::SamplerState().Create(sd);
+	PipeLine::SamplerState().Apply(clamp, 0xffff, Slot_Sampler_Clamp);
+
 	ResourceDesc voxelDesc = FileLoader::LoadResourceDesc(workingFolder + "Effects\\Resources\\voxel.json");
 	int vtex = PipeLine::Resources().Create(voxelDesc);
 
