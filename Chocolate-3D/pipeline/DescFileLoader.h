@@ -15,4 +15,6 @@ namespace FileLoader {
 	RasterizerDesc LoadRasterizerDesc(const string & filePath);
 
 	SamplerDesc LoadSamplerDesc(const string & filePath);
+
+	ViewPortDesc LoadViewPort(const string & filePath);
 }

@@ -1,0 +1,20 @@
+{
+  "depth_enable": true,
+  "depth_write": true,
+  "depth_func": "less_equal",
+  "stencil_enable": false,
+  "stencil_read_mask": 255,
+  "stencil_write_mask": 255,
+  "front_face": {
+    "stencil_fail_op": "op_keep",
+    "stencil_depth_fail_op": "op_incr",
+    "stencil_pass_op": "op_keep",
+    "stencil_func": "always"
+  },
+  "back_face": {
+    "stencil_fail_op": "op_keep",
+    "stencil_depth_fail_op": "op_decr",
+    "stencil_pass_op": "op_keep",
+    "stencil_func": "always"
+  }
+}

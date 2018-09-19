@@ -1,0 +1,12 @@
+{
+  "fill_mode": "solid",
+  "cull_mode": "none",
+  "front_counter_clockwise": false,
+  "depth_bias": 0,
+  "depth_bias_clamp": 0,
+  "slope_scaled_depth_bias": 0,
+  "depth_clip_enable": true,
+  "scissor_enable": false,
+  "multisample_enable": false,
+  "antialiased_line_enable": false
+}

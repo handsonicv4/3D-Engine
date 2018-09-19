@@ -19,6 +19,8 @@ typedef D3D11_RASTERIZER_DESC RasterizerDesc;
 
 typedef D3D11_SAMPLER_DESC SamplerDesc;
 
+typedef D3D11_VIEWPORT ViewPortDesc;
+
 class DepthStencilState : public IDContainer<ID3D11DepthStencilState*>
 {
 	SINGLETON(DepthStencilState)
@@ -64,11 +66,11 @@ public:
 	void Apply(int id, UINT stage, UINT slot);
 };
 
-class ViewPort : public IDContainer<D3D11_VIEWPORT>
+class ViewPort : public IDContainer<ViewPortDesc>
 {
 	SINGLETON(ViewPort)
 public:
-	int Create(const D3D11_VIEWPORT& desc);
+	int Create(const ViewPortDesc& desc);
 	int CreateFromFile(const string& file);
 	void Apply(vector<int> id);
 	void Apply(int id);

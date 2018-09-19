@@ -1,0 +1,16 @@
+{
+  "alpha_to_coverage": false,
+  "independent_blend": false,
+  "render_target": [
+    {
+      "blend_enable": true,
+      "src_blend": "src_alpha",
+      "dest_blend": "inv_src_alpha",
+      "blend_op": "add",
+      "src_blend_alpha": "one",
+      "dest_blend_alpha": "zero",
+      "blend_op_alpha": "add",
+      "write_mask": 15
+    }
+  ]
+}

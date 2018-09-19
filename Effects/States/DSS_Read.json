@@ -1,0 +1,6 @@
+{
+  "depth_enable": true,
+  "depth_write": false,
+  "depth_func": "less_equal",
+  "stencil_enable": false
+}

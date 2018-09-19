@@ -189,29 +189,35 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 	ArkWindow window("Engine");
 	window.lpfnWndProc = WndProc;
 	window.Show();
-	
-
-
-	
-	//FileLoader::LoadResourceDesc("D:\\1.txt");
-	//FileLoader::LoadDepthStencilDesc("D:\\st.txt");
 	engine.Init(window.hwnd, false);
 
-
-
-	//ResourceDesc de;
-	//de.access = Defualt;
-	//de.type = Texture2D;
-	//de.size[0] = 64;
-	//de.size[1] = 64;
-	//de.bindFlag = Bind_Shader_Resource|Bind_Render_Target;
-	//de.format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	//Resource* a = Resource::Create(de);
 	int il = PipeLine::InputLayout().Create(workingFolder + "Shaders\\DirectLightVS.hlsl", "main");
 	PipeLine::InputLayout().Activate(il);
 
-	ResourceDesc test = FileLoader::LoadResourceDesc(workingFolder + "Effects\\Resource\\voxel.json");
-	int vtex = PipeLine::Resources().Create(test);
+	DepthStencilDesc dsd;
+	dsd = FileLoader::LoadDepthStencilDesc(workingFolder + "Effects\\States\\DSS_Default.json");
+	int dssDefault = PipeLine::DepthStencilState().Create(dsd);
+	dsd = FileLoader::LoadDepthStencilDesc(workingFolder + "Effects\\States\\DSS_Read.json");
+	int dssRead = PipeLine::DepthStencilState().Create(dsd);
+	dsd = FileLoader::LoadDepthStencilDesc(workingFolder + "Effects\\States\\DSS_Disable.json");
+	int dssDisable = PipeLine::DepthStencilState().Create(dsd);
+
+	BlendDesc bd;
+	bd = FileLoader::LoadBlendDesc(workingFolder + "Effects\\States\\BS_Disable.json");
+	int bsDisable = PipeLine::BlendState().Create(bd);
+
+	RasterizerDesc rd = FileLoader::LoadRasterizerDesc(workingFolder + "Effects\\States\\RS_Default.json");
+	int rsDefault = PipeLine::RasterizorState().Create(rd);
+	rd = FileLoader::LoadRasterizerDesc(workingFolder + "Effects\\States\\RS_No_Cull.json");
+	int rsNoCull = PipeLine::RasterizorState().Create(rd);
+
+	ViewPortDesc vpd = FileLoader::LoadViewPort(workingFolder + "Effects\\States\\VP_Default.json");
+	int vpDefault = PipeLine::ViewPort().Create(vpd);
+	vpd = FileLoader::LoadViewPort(workingFolder + "Effects\\States\\VP_64.json");
+	int vp64 = PipeLine::ViewPort().Create(vpd);
+
+	ResourceDesc voxelDesc = FileLoader::LoadResourceDesc(workingFolder + "Effects\\Resources\\voxel.json");
+	int vtex = PipeLine::Resources().Create(voxelDesc);
 
 	BindingRule voxelTexture;
 	voxelTexture.resourceID = vtex;
@@ -224,41 +230,28 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 	Pass directLight;
 	directLight.vertexShaderID = PipeLine::VertexShader().Create(workingFolder + "Shaders\\DirectLightVS.hlsl", "main");
 	directLight.pixelShaderID = PipeLine::PixelShader().Create(workingFolder + "Shaders\\DirectLightPS.hlsl", "main");
-	directLight.viewPort.Height = (float)engine.resolutionY;
-	directLight.viewPort.Width = (float)engine.resolutionX;
-	directLight.bendStateID = PipeLine::BlendState().Create(directLight.blend);
-	directLight.depthStencilStateID = PipeLine::DepthStencilState().Create(directLight.depthStencil);
-	directLight.rasterizorStateID = PipeLine::RasterizorState().Create(directLight.rasterizer);
-	directLight.viewPortID = PipeLine::ViewPort().Create(directLight.viewPort);
+	directLight.bendStateID = bsDisable;
+	directLight.depthStencilStateID = dssRead;
+	directLight.rasterizorStateID = rsDefault;
+	directLight.viewPortID = vpDefault;
 
 	Pass preZ;
 	preZ.vertexShaderID= PipeLine::VertexShader().Create(workingFolder + "Shaders\\PreZ\\VertexShader.hlsl", "main");
 	preZ.pixelShaderID = PipeLine::PixelShader().Create(workingFolder + "Shaders\\PreZ\\PixelShader.hlsl", "main");
-	preZ.viewPort.Height = (float)engine.resolutionY;
-	preZ.viewPort.Width = (float)engine.resolutionX;
-	preZ.blend.RenderTarget[0].BlendEnable = false;
-	preZ.blend.RenderTarget[0].RenderTargetWriteMask = 0;
-	preZ.depthStencil.DepthEnable = true;
-	preZ.bendStateID = PipeLine::BlendState().Create(preZ.blend);
-	preZ.depthStencilStateID = PipeLine::DepthStencilState().Create(preZ.depthStencil);
-	preZ.rasterizorStateID = PipeLine::RasterizorState().Create(preZ.rasterizer);
-	preZ.viewPortID = PipeLine::ViewPort().Create(preZ.viewPort);
+	preZ.bendStateID = bsDisable;
+	preZ.depthStencilStateID = dssDefault;
+	preZ.rasterizorStateID = rsDefault;
+	preZ.viewPortID = vpDefault;
 
 	Pass voxelization;
 	voxelization.vertexShaderID = PipeLine::VertexShader().Create(workingFolder + "Shaders\\VoxelizationVS.hlsl", "main");
 	voxelization.pixelShaderID= PipeLine::PixelShader().Create(workingFolder + "Shaders\\VoxelizationPS.hlsl", "main");
 	voxelization.geometryShaderID= PipeLine::GeometryShader().Create(workingFolder + "Shaders\\VoxelizationGS.hlsl", "main");
-	voxelization.viewPort.Height = 64.0;
-	voxelization.viewPort.Width = 64.0;
-	voxelization.blend.RenderTarget[0].BlendEnable = false;
-	preZ.blend.RenderTarget[0].RenderTargetWriteMask = 0;
-	voxelization.depthStencil.DepthEnable = false;
-	voxelization.rasterizer.CullMode = D3D11_CULL_NONE;
 	voxelization.resourceBinding.push_back(voxelTexture);
-	voxelization.bendStateID = PipeLine::BlendState().Create(voxelization.blend);
-	voxelization.depthStencilStateID = PipeLine::DepthStencilState().Create(voxelization.depthStencil);
-	voxelization.rasterizorStateID = PipeLine::RasterizorState().Create(voxelization.rasterizer);
-	voxelization.viewPortID = PipeLine::ViewPort().Create(voxelization.viewPort);
+	voxelization.bendStateID = bsDisable;
+	voxelization.depthStencilStateID = dssDisable;
+	voxelization.rasterizorStateID = rsNoCull;
+	voxelization.viewPortID = vp64;
 
 	//Pass visualization;
 	//visualization.vertexShaderID = engine.vertexShader.Create(workingFolder + "Shaders\\voxelization\\vis.hlsl", "main");
@@ -276,22 +269,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 	//voxelView.resourceID = vtex;
 	//visualization.bindingTable.push_back(voxelView);
 
-	Pass coneTracing;
-	coneTracing.vertexShaderID = directLight.vertexShaderID;
-	coneTracing.pixelShaderID= PipeLine::PixelShader().Create(workingFolder + "Shaders\\\ConeTracingPS.hlsl", "main");
-	coneTracing.viewPort.Height = (float)engine.resolutionY;
-	coneTracing.viewPort.Width = (float)engine.resolutionX;
-	coneTracing.blend.RenderTarget[0].BlendEnable = false;
 	BindingRule voxelT;
 	voxelT.flag = Bind_Shader_Resource;
 	voxelT.stages = Stage_Pixel_Shader;
 	voxelT.slot = Slot_Texture_Voxel;
 	voxelT.resourceID = vtex;
+
+	Pass coneTracing;
+	coneTracing.vertexShaderID = directLight.vertexShaderID;
+	coneTracing.pixelShaderID= PipeLine::PixelShader().Create(workingFolder + "Shaders\\\ConeTracingPS.hlsl", "main");
 	coneTracing.resourceBinding.push_back(voxelT);
-	coneTracing.bendStateID = PipeLine::BlendState().Create(coneTracing.blend);
-	coneTracing.depthStencilStateID = PipeLine::DepthStencilState().Create(coneTracing.depthStencil);
-	coneTracing.rasterizorStateID = PipeLine::RasterizorState().Create(coneTracing.rasterizer);
-	coneTracing.viewPortID = PipeLine::ViewPort().Create(coneTracing.viewPort);
+	coneTracing.bendStateID = bsDisable;
+	coneTracing.depthStencilStateID = dssRead;
+	coneTracing.rasterizorStateID = rsDefault;
+	coneTracing.viewPortID = vpDefault;
 
 
 

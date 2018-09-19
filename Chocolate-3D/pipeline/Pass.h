@@ -24,11 +24,6 @@ struct BindingRule
 
 struct Pass
 {
-	D3D11_VIEWPORT viewPort;
-	D3D11_DEPTH_STENCIL_DESC depthStencil;
-	D3D11_RASTERIZER_DESC rasterizer;
-	D3D11_BLEND_DESC blend;
-
 	int vertexShaderID;
 	int geometryShaderID;
 	int pixelShaderID;

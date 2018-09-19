@@ -316,22 +316,15 @@ void init() {
 }
 
 Json  LoadJson(const string & filePath) {
-	ifstream file;
-	try
-	{
-		file.open(filePath);
-	}
-	catch (exception err)
-	{
-		throw exception(("Open File Error: " + filePath).c_str());
-	}
+	ifstream file(filePath);
+	if(!file) throw exception(("Can't find/open file: " + filePath).c_str());
 	stringstream ss;
 	ss << file.rdbuf();
 	file.close();
-
+	string input = ss.str();
 	
 	string err;
-	Json json = Json::parse(ss.str(), err,json11::COMMENTS);
+	Json json = Json::parse(input, err,json11::COMMENTS);
 	if (err != "") {
 		throw exception(("Json Format Error: " + filePath + err).c_str());
 	}
@@ -531,6 +524,8 @@ BlendDesc FileLoader::LoadBlendDesc(const string & filePath)
 		}
 		desc.RenderTarget[i].BlendEnable = arr[i]["blend_enable"].bool_value();
 
+		//if (!desc.RenderTarget[i].BlendEnable) continue;
+
 		if (!CHECKKEY(arr[i]["src_blend"], blend)) 
 		{
 			throw exception(("Can't find or recognize \"src_blend\". In file : " + filePath).c_str());
@@ -642,7 +637,7 @@ RasterizerDesc FileLoader::LoadRasterizerDesc(const string & filePath)
 	}
 	desc.AntialiasedLineEnable = json["antialiased_line_enable"].bool_value();
 
-	return desc;
+	return move(desc);
 }
 
 SamplerDesc FileLoader::LoadSamplerDesc(const string & filePath)
@@ -719,5 +714,51 @@ SamplerDesc FileLoader::LoadSamplerDesc(const string & filePath)
 	}
 	desc.MaxLOD = (float)json["max_lod"].number_value();
 
-	return desc;
+	return move(desc);
+}
+
+ViewPortDesc FileLoader::LoadViewPort(const string & filePath)
+{
+	if (!resourceType.size()) init();
+	Json json = LoadJson(filePath);
+	ViewPortDesc desc;
+	ZeroMemory(&desc, sizeof(desc));
+
+	if (!json["top_left_x"].is_number())
+	{
+		throw exception(("Can't find or recognize \"top_left_x\". In file : " + filePath).c_str());
+	}
+	desc.TopLeftX = (float)json["top_left_x"].number_value();
+
+	if (!json["top_left_y"].is_number())
+	{
+		throw exception(("Can't find or recognize \"top_left_y\". In file : " + filePath).c_str());
+	}
+	desc.TopLeftY = (float)json["top_left_y"].number_value();
+
+	if (!json["width"].is_number())
+	{
+		throw exception(("Can't find or recognize \"width\". In file : " + filePath).c_str());
+	}
+	desc.Width = (float)json["width"].number_value();
+
+	if (!json["height"].is_number())
+	{
+		throw exception(("Can't find or recognize \"height\". In file : " + filePath).c_str());
+	}
+	desc.Height = (float)json["height"].number_value();
+
+	if (!json["min_depth"].is_number())
+	{
+		throw exception(("Can't find or recognize \"min_depth\". In file : " + filePath).c_str());
+	}
+	desc.MinDepth = (float)json["min_depth"].number_value();
+
+	if (!json["max_depth"].is_number())
+	{
+		throw exception(("Can't find or recognize \"max_depth\". In file : " + filePath).c_str());
+	}
+	desc.MaxDepth = (float)json["max_depth"].number_value();
+
+	return move(desc);
 }
