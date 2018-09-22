@@ -23,6 +23,7 @@ public:
 	vector<Light> lightList;
 
 	bool Init(HWND window, bool fullscreen);
+	bool LoadEffect(const string &file);
 	void Shutdown();
 	int LoadModel(Model &model);
 	void UnloadModel(UINT modelID);
@@ -41,6 +42,7 @@ public:
 	bool UpdateLightBuffer();
 	map<int, ModelResource> modelList;
 private:
+	unordered_map<string, vector<Pass>> Effact;
 	bool vsync_enabled;
 	bool fullscreen;
 	UINT oldResolutionX, oldResolutionY;

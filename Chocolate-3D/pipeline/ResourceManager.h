@@ -92,13 +92,14 @@ public:
 	bool SetBinding(PiplineStage stage, BindFlag bindFlag, UINT startSlot, vector<int>& idList);
 	bool SetBinding(PiplineStage stage, BindFlag bindFlag, UINT slot, int id);
 	int Create(ResourceDesc desc, void* pData = NULL, size_t dataSize = 0);
+	int CreateFromFile(const string& filePath);
 	int GetBackBuffer();
 	bool UpdateResourceData(UINT resourceID, void* pData, UINT size);
 	void CopyResourceData(UINT srcID, UINT dstID);
 	bool GenerateMipMap(UINT id);
 	void Reset(UINT id, const float value[4]);
 	void Reset(UINT id, const UINT value[4]);
-	void ResetDSV(UINT id, D3D11_CLEAR_FLAG flag, float depth, UINT8 stencil);
+	void Reset(UINT id, UINT flag, float depth, UINT8 stencil);
 private:
 	void Release(Resource* &element) override;
 	ID3D11DepthStencilView* currentDSV;

@@ -5,8 +5,9 @@
 //-------------------------------------------------------------------------
 
 #include"StateManager.h"
+#include"DescFileLoader.h"
 #include"Pipeline.h"
-
+using namespace FileLoader;
 
 DepthStencilState::DepthStencilState()
 {
@@ -29,41 +30,16 @@ int DepthStencilState::Create(DepthStencilDesc desc)
 	return id;
 }
 
-int DepthStencilState::CreateFromFile(const string & file)
+int DepthStencilState::CreateFromFile(const string & filePath)
 {
-	DepthStencilDesc desc;
-	ZeroMemory(&desc, sizeof(desc));
-	desc.DepthEnable = true;
-	desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-	desc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
-	desc.StencilEnable = false;
-	desc.StencilReadMask = 0xFF;
-	desc.StencilWriteMask = 0xFF;
-	desc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-	desc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
-	desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-	desc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-	desc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-	desc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
-	desc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-	desc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-	if (file == "r")
-	{
-		desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
-	}
-	else if (file == "d")
-	{
-		desc.DepthEnable = false;
-	}
-	
-	return Create(desc);
+	return Create(LoadDepthStencilDesc(filePath));
 }
 
-void DepthStencilState::Apply(int id, UINT depthStencilRef)
+void DepthStencilState::Apply(int id, UINT stencilRef)
 {
 	if (Exist(id))
 	{
-		PipeLine::pContext->OMSetDepthStencilState(pool[id], depthStencilRef);
+		PipeLine::pContext->OMSetDepthStencilState(pool[id], stencilRef);
 	}
 }
 
@@ -88,19 +64,9 @@ int BlendState::Create(BlendDesc desc)
 	return id;
 }
 
-int BlendState::CreateFromFile(const string & file)
+int BlendState::CreateFromFile(const string & filePath)
 {
-	BlendDesc desc;
-	ZeroMemory(&desc, sizeof(desc));
-	desc.RenderTarget[0].BlendEnable = false;
-	desc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
-	desc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
-	desc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
-	desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
-	desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
-	desc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-	desc.RenderTarget[0].RenderTargetWriteMask = 0x0f;
-	return Create(desc);
+	return Create(LoadBlendDesc(filePath));
 }
 
 void BlendState::Apply(int id, float blendFactor[4], UINT blendSampleMask)
@@ -132,21 +98,9 @@ int RasterizorState::Create(RasterizerDesc desc)
 	return id;
 }
 
-int RasterizorState::CreateFromFile(const string & file)
+int RasterizorState::CreateFromFile(const string & filePath)
 {
-	RasterizerDesc desc;
-	ZeroMemory(&desc, sizeof(desc));
-	desc.AntialiasedLineEnable = false;
-	desc.CullMode = D3D11_CULL_BACK;
-	desc.DepthBias = 0;
-	desc.DepthBiasClamp = 0.0f;
-	desc.DepthClipEnable = true;
-	desc.FillMode = D3D11_FILL_SOLID;
-	desc.FrontCounterClockwise = false;
-	desc.MultisampleEnable = false;
-	desc.ScissorEnable = false;
-	desc.SlopeScaledDepthBias = 0.0f;
-	return Create(desc);
+	return Create(LoadRasterizerDesc(filePath));
 }
 
 void RasterizorState::Apply(int id)
@@ -176,30 +130,10 @@ int SamplerState::Create(SamplerDesc desc)
 	return id;
 }
 
-int SamplerState::CreateFromFile(const string & file)
+int SamplerState::CreateFromFile(const string & filePath)
 {
-	SamplerDesc desc;
-	ZeroMemory(&desc, sizeof(desc));
-	desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-	desc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-	desc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-	desc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-	desc.MipLODBias = 0.0f;
-	desc.MaxAnisotropy = 1;
-	desc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
-	desc.BorderColor[0] = 0;
-	desc.BorderColor[1] = 0;
-	desc.BorderColor[2] = 0;
-	desc.BorderColor[3] = 0;
-	desc.MinLOD = 0;
-	desc.MaxLOD = D3D11_FLOAT32_MAX;
-	if (file == "clamp")
-	{
-		desc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-		desc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-		desc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-	}
-	return Create(desc);
+
+	return Create(LoadSamplerDesc(filePath));
 }
 
 void SamplerState::Apply(int id, UINT stage, UINT slot)
@@ -242,17 +176,9 @@ int ViewPort::Create(const D3D11_VIEWPORT &desc)
 	return id;
 }
 
-int ViewPort::CreateFromFile(const string & file)
+int ViewPort::CreateFromFile(const string & filePath)
 {
-	D3D11_VIEWPORT viewPort;
-	ZeroMemory(&viewPort, sizeof(viewPort));
-	viewPort.Width = (float)1280;
-	viewPort.Height = (float)800;
-	viewPort.MinDepth = 0.0f;
-	viewPort.MaxDepth = 1.0f;
-	viewPort.TopLeftX = 0.0f;
-	viewPort.TopLeftY = 0.0f;
-	return Create(viewPort);
+	return Create(LoadViewPort(filePath));
 }
 
 void ViewPort::Apply(vector<int> id)

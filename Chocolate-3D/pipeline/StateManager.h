@@ -28,7 +28,7 @@ protected:
 	void Release(ID3D11DepthStencilState* &element) override;
 public:
 	int Create(DepthStencilDesc desc);
-	int CreateFromFile(const string& file);
+	int CreateFromFile(const string& filePath);
 	void Apply(int id, UINT depthStencilRef);
 };
 
@@ -40,7 +40,7 @@ protected:
 	void Release(ID3D11BlendState* &element) override;
 public:
 	int Create(BlendDesc desc);
-	int CreateFromFile(const string& file);
+	int CreateFromFile(const string& filePath);
 	void Apply(int id, float blendFactor[4], UINT blendSampleMask);
 };
 
@@ -51,7 +51,7 @@ protected:
 	void Release(ID3D11RasterizerState* &element) override;
 public:
 	int Create(RasterizerDesc desc);
-	int CreateFromFile(const string& file);
+	int CreateFromFile(const string& filePath);
 	void Apply(int id);
 };
 
@@ -62,7 +62,7 @@ protected:
 	void Release(ID3D11SamplerState* &element) override;
 public:
 	int Create(SamplerDesc desc);
-	int CreateFromFile(const string& file);
+	int CreateFromFile(const string& filePath);
 	void Apply(int id, UINT stage, UINT slot);
 };
 
@@ -71,7 +71,7 @@ class ViewPort : public IDContainer<ViewPortDesc>
 	SINGLETON(ViewPort)
 public:
 	int Create(const ViewPortDesc& desc);
-	int CreateFromFile(const string& file);
+	int CreateFromFile(const string& filePath);
 	void Apply(vector<int> id);
 	void Apply(int id);
 };

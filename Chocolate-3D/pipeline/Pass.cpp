@@ -6,9 +6,9 @@ BindingRule::BindingRule()
 	resourceID = -1;
 }
 
-Operation::Operation()
+PassOperation::PassOperation()
 {
-	type = Draw;
+	type = Pass_Operation_Draw;
 	memset(threadSize, 0, sizeof(threadSize));
 	resourceID = 0;
 	memset(value, 0, sizeof(value));

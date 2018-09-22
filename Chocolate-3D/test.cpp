@@ -191,6 +191,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 	window.Show();
 	engine.Init(window.hwnd, false);
 
+	engine.LoadEffect(workingFolder + "Effects\\test.json");
+
 	int il = PipeLine::InputLayout().Create(workingFolder + "Shaders\\DirectLightVS.hlsl", "main");
 	PipeLine::InputLayout().Activate(il);
 
@@ -218,13 +220,51 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 
 	SamplerDesc sd = FileLoader::LoadSamplerDesc(workingFolder + "Effects\\States\\SS_Default.json");
 	int def = PipeLine::SamplerState().Create(sd);
-	PipeLine::SamplerState().Apply(def, 0xffff, Slot_Sampler_Default);
+	
 	sd = FileLoader::LoadSamplerDesc(workingFolder + "Effects\\States\\SS_Clamp.json");
 	int clamp = PipeLine::SamplerState().Create(sd);
-	PipeLine::SamplerState().Apply(clamp, 0xffff, Slot_Sampler_Clamp);
+	
 
 	ResourceDesc voxelDesc = FileLoader::LoadResourceDesc(workingFolder + "Effects\\Resources\\voxel.json");
 	int vtex = PipeLine::Resources().Create(voxelDesc);
+
+	ResourceDesc dsbDesc = FileLoader::LoadResourceDesc(workingFolder + "Effects\\Resources\\DepthStencil.json");
+	int dsb = PipeLine::Resources().Create(dsbDesc);
+
+	//PipeLine::SamplerState().Apply(def, 0xffff, Slot_Sampler_Default);
+	//PipeLine::SamplerState().Apply(clamp, 0xffff, Slot_Sampler_Clamp);
+	//PipeLine::Resources().SetBinding(Stage_Output_Merge, Bind_Depth_Stencil, 0, dsb);
+	//PipeLine::Resources().SetBinding(Stage_Output_Merge, Bind_Render_Target, 0, PipeLine::Resources().GetBackBuffer());
+
+	BindingRule depth, back, sampler, samplerClamp;
+	depth.flag = Bind_Depth_Stencil;
+	depth.stages = Stage_Output_Merge;
+	depth.slot = 0;
+	depth.resourceID = dsb;
+
+	back.flag = Bind_Render_Target;
+	back.slot = 0;
+	back.stages = Stage_Output_Merge;
+	back.resourceID = PipeLine::Resources().GetBackBuffer();
+
+	sampler.slot = 0;
+	sampler.stages = Stage_Pixel_Shader;
+	sampler.resourceID = def;
+
+
+	PassOperation draw, resetDepth, resetBB;
+	draw.type = Pass_Operation_Draw;
+
+	float depthVal = 1.0f;
+	resetDepth.type = Pass_Operation_Reset;
+	resetDepth.resourceID = dsb;
+	resetDepth.value[0] = 1;
+	resetDepth.value[1] = *(UINT*)(&depthVal);
+
+	float color[] = { 0,0,0.5,0 };
+	resetBB.type = Pass_Operation_Reset;
+	resetBB.resourceID = PipeLine::Resources().GetBackBuffer();
+	memcpy(resetBB.value, color, sizeof(color));
 
 	BindingRule voxelTexture;
 	voxelTexture.resourceID = vtex;
@@ -241,6 +281,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 	directLight.depthStencilStateID = dssRead;
 	directLight.rasterizorStateID = rsDefault;
 	directLight.viewPortID = vpDefault;
+	directLight.resourceBinding = vector<BindingRule>({ depth, back });
+	directLight.samplerBinding.push_back(sampler);
+	directLight.operations = vector<PassOperation>({ resetBB, draw,  resetDepth });
 
 	Pass preZ;
 	preZ.vertexShaderID= PipeLine::VertexShader().Create(workingFolder + "Shaders\\PreZ\\VertexShader.hlsl", "main");
@@ -249,6 +292,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 	preZ.depthStencilStateID = dssDefault;
 	preZ.rasterizorStateID = rsDefault;
 	preZ.viewPortID = vpDefault;
+	preZ.resourceBinding = vector<BindingRule>({ depth });
+	preZ.samplerBinding.push_back(sampler);
+	preZ.operations.push_back(draw);
 
 	Pass voxelization;
 	voxelization.vertexShaderID = PipeLine::VertexShader().Create(workingFolder + "Shaders\\VoxelizationVS.hlsl", "main");
@@ -513,13 +559,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 		}
 
 		float color[] = { 0,0,0.5,0 };
-		PipeLine::Resources().Reset(PipeLine::Resources().GetBackBuffer(), color);
-		PipeLine::Resources().ResetDSV(engine.depthStencilBufferID, D3D11_CLEAR_DEPTH, 1.0f, 0);
+		//PipeLine::Resources().Reset(PipeLine::Resources().GetBackBuffer(), color);
+		//PipeLine::Resources().ResetDSV(dsb, D3D11_CLEAR_DEPTH, 1.0f, 0);
 		engine.UpdateFrameBuffer();
 		engine.UpdateLightBuffer();
 
 
-		if (gi)
+		if (false)
 		{
 			in->visable = true;
 			//in2->visable = true;
@@ -537,7 +583,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 
 			if (false)
 			{
-				PipeLine::Resources().ResetDSV(engine.depthStencilBufferID, D3D11_CLEAR_DEPTH, 1.0f, 0);
+				PipeLine::Resources().Reset(dsb, D3D11_CLEAR_DEPTH, 1.0f, 0);
 				in->visable = false;
 				//in2->visable = false;
 				//pW1->visable = false;

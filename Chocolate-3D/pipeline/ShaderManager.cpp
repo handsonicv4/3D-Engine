@@ -4,6 +4,7 @@
 //--------------------------------------------------------------------------------
 
 #include"ShaderManager.h"
+#include <D3Dcompiler.h>
 #include <locale>
 #include <codecvt>
 #include<assert.h>

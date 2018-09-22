@@ -1,6 +1,4 @@
 #pragma once
-#include<unordered_map>
-#include<d3d11_1.h>
 #include"ResourceManager.h"
 using namespace std;
 

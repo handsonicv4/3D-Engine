@@ -6,7 +6,6 @@
 #pragma once
 #include <windows.h>
 #include <d3d11_1.h>
-#include <D3Dcompiler.h>
 #include "Pipeline.h"
 #include "IDContainer.h"
 #include "Singleton.h"

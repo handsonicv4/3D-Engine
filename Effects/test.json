@@ -1,0 +1,123 @@
+{
+  "resource": {
+    "vertex_shader": {
+      "direct_light": "Shaders\\DirectLightVS.hlsl",
+      "pre_z": "Shaders\\PreZ\\VertexShader.hlsl",
+      "voxelization": "Shaders\\VoxelizationVS.hlsl"
+    },
+    "geometry_shader": {
+      "voxelization": "Shaders\\VoxelizationGS.hlsl"
+    },
+    "pixel_shader": {
+      "direct_light": "Shaders\\DirectLightPS.hlsl",
+      "pre_z": "Shaders\\PreZ\\PixelShader.hlsl",
+      "voxelization": "Shaders\\VoxelizationPS.hlsl",
+      "cone_tracing": "Shaders\\ConeTracingPS.hlsl"
+    },
+    "rasterizer_state": {
+      "default": "States\\RS_Default.json",
+      "no_cull": "States\\RS_No_Cull.json"
+    },
+    "depth_stencil_state": {
+      "default": "States\\DSS_Default.json",
+      "read": "States\\DSS_Read.json",
+      "disable": "States\\DSS_Disable.json"
+    },
+    "blend_state": {
+      "disable": "States\\BS_Disable.json"
+    },
+    "sampler_state": {
+      "default": "States\\SS_Default.json",
+      "clamp": "States\\SS_Clamp.json"
+    },
+    "view_port": {
+      "default": "States\\VP_Default.json",
+      "voxelization": "States\\VP_64.json"
+    },
+    "resource": {
+      "depth_stencil": "Resources\\DepthStencil.json",
+      "voxel_texture": "Resources\\voxel.json"
+    }
+  },
+
+  "pass": {
+    "pre_z": {
+      "name": "pre_z",
+      "vertex_shader": "pre_z",
+      "pixel_shader": "pre_z",
+      "rasterizer_state": "default",
+      "depth_stencil_state": "default",
+      "blend_state": "disable",
+      "view_port": "default",
+      "topology": "trianglelist",
+      "sampler_state": [
+        {
+          "name": "default",
+          "stage": "pixel_shader",
+          "slot": 0
+        }
+      ]
+    },
+    "direct_light": {
+      "name": "direct_light",
+      "vertex_shader": "direct_light",
+      "pixel_shader": "direct_light",
+      "geometry_shader": "",
+      "domain_shader": "",
+      "hull_shader": "",
+      "rasterizer_state": "default",
+      "depth_stencil_state": "read",
+      "blend_state": "disable",
+      "view_port": "default",
+      "topology": "trianglelist",
+      "sampler_state": [
+        {
+          "name": "default",
+          "stage": "pixel_shader",
+          "slot": 0
+        }
+      ],
+      "resource": [
+        {
+          "name": "back_buffer",
+          "binding_flag": "render_target",
+          "stage": "output_merge",
+          "slot": "0"
+        },
+        {
+          "name": "depth_stencil",
+          "binding_flag": "depth_stencil",
+          "stage": "output_merge",
+          "slot": "0"
+        }
+      ],
+      "operation": [
+        {
+          "type": "reset",
+          "target": "back_buffer",
+          "value": [ 0, 0, 0, 0 ],
+          "value_type": "float"
+        },
+        { "type": "draw" },
+        {
+          "type": "generate_mip",
+          "target": ""
+        },
+        {
+          "type": "reset",
+          "target": "depth_stencil",
+          "value": [ 1.0 ],
+          "value_type": "depth"
+        }
+      ]
+    }
+  },
+
+  "renderer": {
+    "direct_light": [
+      "pre_z",
+      "direct_light"
+    ],
+    "voxel_conetracing": []
+  }
+}

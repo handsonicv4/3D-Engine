@@ -2,6 +2,8 @@
 //Author: Sentao
 //===========================================================
 #include"ResourceManager.h"
+#include"DescFileLoader.h"
+using namespace FileLoader;
 
 unordered_map<DXGI_FORMAT, UINT> Resource::FormatSizeTable;
 
@@ -792,6 +794,11 @@ int ResourceManager::Create(ResourceDesc desc, void * pData, size_t dataSize)
 	return id;
 }
 
+int ResourceManager::CreateFromFile(const string & filePath)
+{
+	return Create(LoadResourceDesc(filePath));
+}
+
 int ResourceManager::GetBackBuffer()
 {
 	if (backBufferID != INVALID) return backBufferID;
@@ -827,7 +834,7 @@ void ResourceManager::Reset(UINT id, const UINT value[4])
 	if (Exist(id)) pool[id]->ResetData(value);
 }
 
-void ResourceManager::ResetDSV(UINT id, D3D11_CLEAR_FLAG flag, float depth, UINT8 stencil)
+void ResourceManager::Reset(UINT id, UINT flag, float depth, UINT8 stencil)
 {
 	if (Exist(id))
 	{
