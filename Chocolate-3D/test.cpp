@@ -277,7 +277,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 	Pass directLight;
 	directLight.vertexShaderID = PipeLine::VertexShader().Create(workingFolder + "Shaders\\DirectLightVS.hlsl", "main");
 	directLight.pixelShaderID = PipeLine::PixelShader().Create(workingFolder + "Shaders\\DirectLightPS.hlsl", "main");
-	directLight.bendStateID = bsDisable;
+	directLight.blendStateID = bsDisable;
 	directLight.depthStencilStateID = dssRead;
 	directLight.rasterizorStateID = rsDefault;
 	directLight.viewPortID = vpDefault;
@@ -288,7 +288,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 	Pass preZ;
 	preZ.vertexShaderID= PipeLine::VertexShader().Create(workingFolder + "Shaders\\PreZ\\VertexShader.hlsl", "main");
 	preZ.pixelShaderID = PipeLine::PixelShader().Create(workingFolder + "Shaders\\PreZ\\PixelShader.hlsl", "main");
-	preZ.bendStateID = bsDisable;
+	preZ.blendStateID = bsDisable;
 	preZ.depthStencilStateID = dssDefault;
 	preZ.rasterizorStateID = rsDefault;
 	preZ.viewPortID = vpDefault;
@@ -301,7 +301,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 	voxelization.pixelShaderID= PipeLine::PixelShader().Create(workingFolder + "Shaders\\VoxelizationPS.hlsl", "main");
 	voxelization.geometryShaderID= PipeLine::GeometryShader().Create(workingFolder + "Shaders\\VoxelizationGS.hlsl", "main");
 	voxelization.resourceBinding.push_back(voxelTexture);
-	voxelization.bendStateID = bsDisable;
+	voxelization.blendStateID = bsDisable;
 	voxelization.depthStencilStateID = dssDisable;
 	voxelization.rasterizorStateID = rsNoCull;
 	voxelization.viewPortID = vp64;
@@ -332,7 +332,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 	coneTracing.vertexShaderID = directLight.vertexShaderID;
 	coneTracing.pixelShaderID= PipeLine::PixelShader().Create(workingFolder + "Shaders\\\ConeTracingPS.hlsl", "main");
 	coneTracing.resourceBinding.push_back(voxelT);
-	coneTracing.bendStateID = bsDisable;
+	coneTracing.blendStateID = bsDisable;
 	coneTracing.depthStencilStateID = dssRead;
 	coneTracing.rasterizorStateID = rsDefault;
 	coneTracing.viewPortID = vpDefault;

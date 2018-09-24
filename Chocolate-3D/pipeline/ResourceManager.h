@@ -89,8 +89,8 @@ class ResourceManager : public	IDContainer<Resource*>
 {
 	SINGLETON(ResourceManager)
 public:
-	bool SetBinding(PiplineStage stage, BindFlag bindFlag, UINT startSlot, vector<int>& idList);
-	bool SetBinding(PiplineStage stage, BindFlag bindFlag, UINT slot, int id);
+	bool SetBinding(PipelineStage stage, BindFlag bindFlag, UINT startSlot, vector<int>& idList);
+	bool SetBinding(PipelineStage stage, BindFlag bindFlag, UINT slot, int id);
 	int Create(ResourceDesc desc, void* pData = NULL, size_t dataSize = 0);
 	int CreateFromFile(const string& filePath);
 	int GetBackBuffer();

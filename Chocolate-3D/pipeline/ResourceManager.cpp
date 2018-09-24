@@ -717,7 +717,7 @@ void ResourceManager::Bind(UINT stages, D3D11_BIND_FLAG bindFlag, UINT startSlot
 	}
 }
 
-bool ResourceManager::SetBinding(PiplineStage stage, BindFlag bindFlag, UINT startSlot, vector< int>& idList)
+bool ResourceManager::SetBinding(PipelineStage stage, BindFlag bindFlag, UINT startSlot, vector< int>& idList)
 {
 	D3D11_BIND_FLAG d3dbindFlag = (D3D11_BIND_FLAG)bindFlag;
 	if (startSlot < 0 || startSlot >= MAX_SLOT_NUMBER || !idList.size())
@@ -776,7 +776,7 @@ bool ResourceManager::SetBinding(PiplineStage stage, BindFlag bindFlag, UINT sta
 	return true;
 }
 
-bool ResourceManager::SetBinding(PiplineStage stage, BindFlag bindFlag, UINT slot, int id)
+bool ResourceManager::SetBinding(PipelineStage stage, BindFlag bindFlag, UINT slot, int id)
 {
 	vector<int> temp;
 	temp.push_back(id);

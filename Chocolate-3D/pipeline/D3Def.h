@@ -40,7 +40,7 @@ enum SamplerSlotDef
 	Slot_Sampler_Default= 0,
 	Slot_Sampler_Clamp = 1,
 };
-enum PiplineStage
+enum PipelineStage
 {
 	Stage_Input_Assembler = 0x1L,
 	Stage_Vertex_Shader = 0x2L,

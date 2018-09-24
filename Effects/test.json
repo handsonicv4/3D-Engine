@@ -1,4 +1,9 @@
 {
+  "config": {
+    "input_layout": "Shaders\\DirectLightVS.hlsl",
+    "resolution": [ 1280, 720 ]
+
+  },
   "resource": {
     "vertex_shader": {
       "direct_light": "Shaders\\DirectLightVS.hlsl",
@@ -62,9 +67,9 @@
       "name": "direct_light",
       "vertex_shader": "direct_light",
       "pixel_shader": "direct_light",
-      "geometry_shader": "",
-      "domain_shader": "",
-      "hull_shader": "",
+      //"geometry_shader": "",
+      //"domain_shader": "",
+      //"hull_shader": "",
       "rasterizer_state": "default",
       "depth_stencil_state": "read",
       "blend_state": "disable",
@@ -78,31 +83,18 @@
         }
       ],
       "resource": [
-        {
-          "name": "back_buffer",
-          "binding_flag": "render_target",
-          "stage": "output_merge",
-          "slot": "0"
-        },
+
         {
           "name": "depth_stencil",
           "binding_flag": "depth_stencil",
           "stage": "output_merge",
-          "slot": "0"
+          "slot": 0
         }
       ],
       "operation": [
-        {
-          "type": "reset",
-          "target": "back_buffer",
-          "value": [ 0, 0, 0, 0 ],
-          "value_type": "float"
-        },
+
         { "type": "draw" },
-        {
-          "type": "generate_mip",
-          "target": ""
-        },
+
         {
           "type": "reset",
           "target": "depth_stencil",

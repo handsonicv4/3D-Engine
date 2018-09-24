@@ -9,6 +9,7 @@ using namespace FileLoader;
 
 GEngine::GEngine()
 {
+	effect = NULL;
 	numBonePerVertex = 4;
 	numBonePerBatch = 1024;
 	animationMatrix.reserve(numBonePerBatch);
@@ -574,7 +575,7 @@ void GEngine::Render(const Pass &pass)
 {
 	PipeLine::DepthStencilState().Apply(pass.depthStencilStateID, 1);
 	float bf[] = { 1,1,1,1 };
-	PipeLine::BlendState().Apply(pass.bendStateID, bf, 0xffffffff);
+	PipeLine::BlendState().Apply(pass.blendStateID, bf, 0xffffffff);
 	PipeLine::RasterizorState().Apply(pass.rasterizorStateID);
 
 	PipeLine::ViewPort().Apply(pass.viewPortID);
@@ -675,138 +676,12 @@ int GEngine::CreateSurfaceRec(float width, float hieght, float leftTopX, float l
 
 bool GEngine::LoadEffect(const string & filePath)
 {
-	ifstream file(filePath);
-	if (!file) throw exception(("Can't find/open file: " + filePath).c_str());
-	stringstream ss;
-	ss << file.rdbuf();
-	file.close();
-	string input = ss.str();
-
-	string err;
-	Json json = Json::parse(input, err, json11::COMMENTS);
-	if (err != "") 
-	{
-		throw exception(("Json Format Error: " + filePath + err).c_str());
-	}
-	string workingFolder = filePath;
-	int upper = workingFolder.size() - 1;
-	while (upper > 0 && workingFolder[upper] != '\\') upper--;
-	workingFolder.resize(upper + 1);
-
-	if (!json["resource"].is_object()) 
-	{
-		throw exception(("Error: can not read \"resource\". " + filePath).c_str());
-	}
-	if (!json["pass"].is_object())
-	{
-		throw exception(("Error: can not read \"pass\". " + filePath).c_str());
-	}
-	if (!json["renderer"].is_object())
-	{
-		throw exception(("Error: can not read \"renderer\". " + filePath).c_str());
-	}
-	Effect effect;
-	unordered_map<string, int> vsName;
-	unordered_map<string, int> psName;
-	unordered_map<string, int> gsName;
-	unordered_map<string, int> dsName;
-	unordered_map<string, int> bName;
-	unordered_map<string, int> rName;
-	unordered_map<string, int> sName;
-	unordered_map<string, int> resName;
-	unordered_map<string, int> vpName;
-	auto resource = json["resource"].object_items();
-	for (auto& e : resource) 
-	{
-		if (!e.second.is_object())
-		{
-			throw exception(("Error: can not parse "+e.first + filePath).c_str());
-		}
-		auto item = e.second.object_items();
-		if (e.first == "vertex_shader")
-		{
-			for (auto& res : item)
-			{
-				if(!res.second.is_string()) throw exception(("Error: can not parse " + res.first + ", in " + filePath).c_str());
-				vsName[res.first] = effect.vertexShaders.size();
-				effect.vertexShaders.push_back(PipeLine::VertexShader().Create(workingFolder + res.second.string_value(),"main"));
-			}
-		}
-		else	if (e.first == "pixel_shader")
-		{
-			for (auto& res : item)
-			{
-				if (!res.second.is_string()) throw exception(("Error: can not parse " + res.first + ", in " + filePath).c_str());
-				psName[res.first] = effect.pixelShaders.size();
-				effect.pixelShaders.push_back(PipeLine::PixelShader().Create(workingFolder + res.second.string_value(), "main"));
-			}
-		}
-		else	if (e.first == "geometry_shader")
-		{
-			for (auto& res : item)
-			{
-				if (!res.second.is_string()) throw exception(("Error: can not parse " + res.first + ", in " + filePath).c_str());
-				gsName[res.first] = effect.geometryShaders.size();
-				effect.geometryShaders.push_back(PipeLine::GeometryShader().Create(workingFolder + res.second.string_value(), "main"));
-			}
-		}
-		else	if (e.first == "depth_stencil_state")
-		{
-			for (auto& res : item)
-			{
-				if (!res.second.is_string()) throw exception(("Error: can not parse " + res.first + ", in " + filePath).c_str());
-				dsName[res.first] = effect.depthStencilStates.size();
-				effect.depthStencilStates.push_back(PipeLine::DepthStencilState().CreateFromFile(workingFolder + res.second.string_value()));
-			}
-		}
-		else	if (e.first == "blend_state")
-		{
-			for (auto& res : item)
-			{
-				if (!res.second.is_string()) throw exception(("Error: can not parse " + res.first + ", in " + filePath).c_str());
-				bName[res.first] = effect.bendStates.size();
-				effect.bendStates.push_back(PipeLine::BlendState().CreateFromFile(workingFolder + res.second.string_value()));
-			}
-		}
-		else	if (e.first == "rasterizer_state")
-		{
-			for (auto& res : item)
-			{
-				if (!res.second.is_string()) throw exception(("Error: can not parse " + res.first + ", in " + filePath).c_str());
-				rName[res.first] = effect.rasterizorStates.size();
-				effect.rasterizorStates.push_back(PipeLine::RasterizorState().CreateFromFile(workingFolder + res.second.string_value()));
-			}
-		}
-		else	if (e.first == "sampler_state")
-		{
-			for (auto& res : item)
-			{
-				if (!res.second.is_string()) throw exception(("Error: can not parse " + res.first + ", in " + filePath).c_str());
-				sName[res.first] = effect.samplerStates.size();
-				effect.samplerStates.push_back(PipeLine::SamplerState().CreateFromFile(workingFolder + res.second.string_value()));
-			}
-		}
-		else	if (e.first == "resource")
-		{
-			for (auto& res : item)
-			{
-				if (!res.second.is_string()) throw exception(("Error: can not parse " + res.first + ", in " + filePath).c_str());
-				resName[res.first] = effect.resources.size();
-				effect.resources.push_back(PipeLine::Resources().CreateFromFile(workingFolder + res.second.string_value()));
-			}
-		}
-		else	if (e.first == "view_port")
-		{
-			for (auto& res : item)
-			{
-				if (!res.second.is_string()) throw exception(("Error: can not parse " + res.first + ", in " + filePath).c_str());
-				vpName[res.first] = effect.viewPorts.size();
-				effect.viewPorts.push_back(PipeLine::ViewPort().CreateFromFile(workingFolder + res.second.string_value()));
-			}
-		}
-		else throw exception(("Error: unknow resource: " + e.first +", in "+ filePath).c_str());
-	}
-
-
+	effect = Effect::Create(filePath);
 	return false;
 }
+void GEngine::CloseEffect()
+{
+	delete effect;
+	effect = NULL;
+}
+//

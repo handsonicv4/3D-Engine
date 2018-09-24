@@ -15,6 +15,7 @@ class GEngine
 public:
 	HWND hwnd;
 	int resolutionX, resolutionY;
+	Effect* effect;
 
 	GEngine();
 	~GEngine();
@@ -24,6 +25,7 @@ public:
 
 	bool Init(HWND window, bool fullscreen);
 	bool LoadEffect(const string &file);
+	void CloseEffect();
 	void Shutdown();
 	int LoadModel(Model &model);
 	void UnloadModel(UINT modelID);
@@ -42,7 +44,6 @@ public:
 	bool UpdateLightBuffer();
 	map<int, ModelResource> modelList;
 private:
-	unordered_map<string, vector<Pass>> Effact;
 	bool vsync_enabled;
 	bool fullscreen;
 	UINT oldResolutionX, oldResolutionY;
