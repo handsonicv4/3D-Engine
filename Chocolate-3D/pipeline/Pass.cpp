@@ -249,70 +249,80 @@ void Effect::DeleteResource(const string& type, const int& id)
 Effect* Effect::Create(const string & filePath)
 {
 	Effect* effect = new Effect();
-	ifstream file(filePath);
-	if (!file) 
-	{
-		Error(effect, "Can't find/open file: " + filePath);
-	}
-	stringstream ss;
-	ss << file.rdbuf();
-	file.close();
-	string input = ss.str();
-
-	string err;
-	Json json = Json::parse(input, err, json11::COMMENTS);
-	if (err != "")
-	{
-		Error(effect, "Json Format Error: " + filePath + ". " + err);
-	}
-	string workingFolder = filePath;
-	int upper = workingFolder.size() - 1;
-	while (upper > 0 && workingFolder[upper] != '\\') upper--;
-	workingFolder.resize(upper + 1);
-
-	if (!json["resource"].is_object())
-	{
-		Error(effect, "Error: can not read \"resource\". " + filePath);
-	}
-	if (!json["pass"].is_object())
-	{
-		Error(effect, "Error: can not read \"pass\". " + filePath);
-	}
-	if (!json["renderer"].is_object())
-	{
-		Error(effect, "Error: can not read \"renderer\". " + filePath);
-	}
-
-	//Load Resources:
-	auto& resource = json["resource"].object_items();
-	for (auto& e : resource)//for each kind of resources;
-	{
-		if (!e.second.is_object()) Error(effect, "Error: can not parse " + e.first + filePath);
-		
-		auto& item = e.second.object_items();
-
-		for (auto& res : item)//for each resource;
+	try {
+		ifstream file(filePath);
+		if (!file)
 		{
-			if (!res.second.is_string()) Error(effect, "Error: can not parse " + res.first + ", in " + filePath);
-			int id = CreateResource(e.first, workingFolder + res.second.string_value());
-			if (id < 0) Error(effect, e.first + " Creation Failed : Name: " + workingFolder + res.second.string_value());
-			effect->resourceMap[e.first][res.first] = id;
+			throw ("Can't find/open file: " + filePath);
+		}
+		stringstream ss;
+		ss << file.rdbuf();
+		file.close();
+		string input = ss.str();
+
+		string err;
+		Json json = Json::parse(input, err, json11::COMMENTS);
+		if (err != "") throw exception(("Json Format Error: " + filePath + ". " + err).c_str());
+		string workingFolder = filePath;
+		int upper = workingFolder.size() - 1;
+		while (upper > 0 && workingFolder[upper] != '\\') upper--;
+		workingFolder.resize(upper + 1);
+
+		if (!json["resource"].is_object()) throw exception(("Error: can not read \"resource\". " + filePath).c_str());
+		if (!json["pass"].is_object()) throw exception(("Error: can not read \"pass\". " + filePath).c_str());
+		if (!json["renderer"].is_object()) throw exception(("Error: can not read \"renderer\". " + filePath).c_str());
+
+		//Load Resources:
+		auto& resource = json["resource"].object_items();
+		effect->resourceMap["resource"]["back_buffer"] = PipeLine::Resources().GetBackBuffer();
+		for (auto& e : resource)//for each kind of resources;
+		{
+			if (!e.second.is_object()) throw exception(("Error: can not parse " + e.first + filePath).c_str());
+
+			auto& item = e.second.object_items();
+
+			for (auto& res : item)//for each resource;
+			{
+				if (!res.second.is_string()) throw exception(("Error: can not parse " + res.first + ", in " + filePath).c_str());
+				int id = CreateResource(e.first, workingFolder + res.second.string_value());
+				if (id < 0) throw exception((effect, e.first + " Creation Failed : Name: " + workingFolder + res.second.string_value()).c_str());
+				effect->resourceMap[e.first][res.first] = id;
+			}
+		}
+
+		//Load Pass:
+		auto& jpass = json["pass"].object_items();
+		unordered_map<string, int> passName;
+		for (auto& e : jpass)
+		{
+			passName[e.first] = effect->passes.size();
+			effect->passes.push_back(Pass(e.second, effect->resourceMap));
+		}
+
+		//Load renderer
+		auto& jrenderer = json["renderer"].object_items();
+		for (auto& e : jrenderer)
+		{
+			if (!e.second.is_array()) throw exception(("Error: can not parse renderer: " + e.first + ", in " + filePath).c_str());
+			for (auto& pname : e.second.array_items())
+			{
+				if(!passName.count(pname.string_value()))  throw exception(("Error: can not parse renderer: " + e.first + ", in " + filePath).c_str());
+				effect->renderers[e.first].push_back(passName[pname.string_value()]);
+			}
 		}
 
 	}
-
-	//Load Pass:
-	auto& jpass = json["pass"].object_items();
-	for (auto& e : jpass)
+	catch (exception ex)
 	{
-		effect->passes.push_back(Pass(e.second, effect->resourceMap));
+		delete effect;
+		throw ex;
 	}
-
 	return effect;
 }
 
 Effect::~Effect()
 {
+	PipeLine::InputLayout().Delete(inputLayout);
 	for (auto& resType : resourceMap)
 	{
 		for (auto& res : resType.second)
@@ -324,14 +334,4 @@ Effect::~Effect()
 	resourceMap.clear();
 	passes.clear();
 	renderers.clear();
-}
-
-void Effect::Error(Effect* &p, const string &err)
-{
-	if (p)
-	{
-		delete p;
-		p = NULL;
-	}
-	throw exception(err.c_str());
 }

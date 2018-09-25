@@ -62,6 +62,7 @@ public:
 
 	Pass();
 	Pass(const json11::Json& obj, const unordered_map<string, unordered_map<string, int>>& resourceMap);
+private:
 	void Load(const string& key, const int& id);
 	void LoadSampler(int id, PipelineStage stage, int slot);
 	void LoadResource(int id, PipelineStage stage, int slot, BindFlag bindFlag);
@@ -72,10 +73,12 @@ class Effect
 {
 public:
 	unordered_map<string, unordered_map<string, int>> resourceMap;
+
 	int inputLayout;
 	vector<Pass> passes;
 
 	unordered_map<string, vector<int>> renderers;
+
 	static Effect* Create(const string & filePath);
 	
 	~Effect();
@@ -85,5 +88,4 @@ private:
 	Effect& operator= (Effect const&) { return *this; }
 	static int CreateResource(const string& type, const string& filePath);
 	static void DeleteResource(const string & type, const int& id);
-	static void Error(Effect* &p, const string& err);
 };
