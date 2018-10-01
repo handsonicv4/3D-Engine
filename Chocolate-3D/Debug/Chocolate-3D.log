@@ -14,45 +14,34 @@ e:\chocolate-3d\chocolate-3d\test.cpp(128): warning C4305: “初始化”: 从�
 e:\chocolate-3d\chocolate-3d\test.cpp(130): warning C4305: “参数”: 从“double”到“float”截断
 e:\chocolate-3d\chocolate-3d\test.cpp(131): warning C4305: “参数”: 从“double”到“float”截断
 e:\chocolate-3d\chocolate-3d\test.cpp(159): warning C4018: “<”: 有符号/无符号不匹配
-e:\chocolate-3d\chocolate-3d\test.cpp(333): warning C4129: “C”: 不可识别的字符转义序列
-e:\chocolate-3d\chocolate-3d\test.cpp(354): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
-e:\chocolate-3d\chocolate-3d\test.cpp(355): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
-e:\chocolate-3d\chocolate-3d\test.cpp(356): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
-e:\chocolate-3d\chocolate-3d\test.cpp(376): warning C4305: “参数”: 从“double”到“float”截断
-e:\chocolate-3d\chocolate-3d\test.cpp(400): warning C4305: “参数”: 从“double”到“float”截断
-e:\chocolate-3d\chocolate-3d\test.cpp(404): warning C4305: “=”: 从“double”到“float”截断
-e:\chocolate-3d\chocolate-3d\test.cpp(414): warning C4305: “参数”: 从“double”到“float”截断
-e:\chocolate-3d\chocolate-3d\test.cpp(421): warning C4305: “=”: 从“double”到“float”截断
-e:\chocolate-3d\chocolate-3d\test.cpp(427): warning C4305: “=”: 从“double”到“float”截断
-e:\chocolate-3d\chocolate-3d\test.cpp(428): warning C4305: “=”: 从“double”到“float”截断
-e:\chocolate-3d\chocolate-3d\test.cpp(429): warning C4305: “=”: 从“double”到“float”截断
-e:\chocolate-3d\chocolate-3d\test.cpp(464): warning C4305: “=”: 从“double”到“float”截断
-e:\chocolate-3d\chocolate-3d\test.cpp(465): warning C4305: “=”: 从“double”到“float”截断
-e:\chocolate-3d\chocolate-3d\test.cpp(467): warning C4305: “=”: 从“double”到“float”截断
-e:\chocolate-3d\chocolate-3d\test.cpp(468): warning C4305: “=”: 从“double”到“float”截断
-e:\chocolate-3d\chocolate-3d\test.cpp(472): warning C4305: “=”: 从“double”到“float”截断
-e:\chocolate-3d\chocolate-3d\test.cpp(485): warning C4305: “=”: 从“double”到“float”截断
-e:\chocolate-3d\chocolate-3d\test.cpp(486): warning C4305: “=”: 从“double”到“float”截断
-e:\chocolate-3d\chocolate-3d\test.cpp(492): warning C4305: “=”: 从“double”到“float”截断
-e:\chocolate-3d\chocolate-3d\test.cpp(494): warning C4305: “=”: 从“double”到“float”截断
-e:\chocolate-3d\chocolate-3d\test.cpp(495): warning C4305: “=”: 从“double”到“float”截断
-e:\chocolate-3d\chocolate-3d\test.cpp(496): warning C4305: “=”: 从“double”到“float”截断
-e:\chocolate-3d\chocolate-3d\test.cpp(497): warning C4305: “=”: 从“double”到“float”截断
-e:\chocolate-3d\chocolate-3d\test.cpp(506): warning C4305: “=”: 从“double”到“float”截断
-e:\chocolate-3d\chocolate-3d\test.cpp(516): warning C4305: “=”: 从“double”到“float”截断
-e:\chocolate-3d\chocolate-3d\test.cpp(520): warning C4305: “=”: 从“double”到“float”截断
-e:\chocolate-3d\chocolate-3d\test.cpp(521): warning C4305: “=”: 从“double”到“float”截断
-e:\chocolate-3d\chocolate-3d\test.cpp(522): warning C4305: “=”: 从“double”到“float”截断
-  StateManager.cpp
-  ShaderManager.cpp
-  ResourceManager.cpp
-  Pass.cpp
-e:\chocolate-3d\chocolate-3d\pipeline\pass.cpp(69): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
-e:\chocolate-3d\chocolate-3d\pipeline\pass.cpp(86): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
-e:\chocolate-3d\chocolate-3d\pipeline\pass.cpp(98): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
-  DescFileLoader.cpp
-  Pipeline.cpp
-  json11.cpp
+e:\chocolate-3d\chocolate-3d\test.cpp(227): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+e:\chocolate-3d\chocolate-3d\test.cpp(228): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+e:\chocolate-3d\chocolate-3d\test.cpp(229): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+e:\chocolate-3d\chocolate-3d\test.cpp(249): warning C4305: “参数”: 从“double”到“float”截断
+e:\chocolate-3d\chocolate-3d\test.cpp(273): warning C4305: “参数”: 从“double”到“float”截断
+e:\chocolate-3d\chocolate-3d\test.cpp(277): warning C4305: “=”: 从“double”到“float”截断
+e:\chocolate-3d\chocolate-3d\test.cpp(287): warning C4305: “参数”: 从“double”到“float”截断
+e:\chocolate-3d\chocolate-3d\test.cpp(294): warning C4305: “=”: 从“double”到“float”截断
+e:\chocolate-3d\chocolate-3d\test.cpp(300): warning C4305: “=”: 从“double”到“float”截断
+e:\chocolate-3d\chocolate-3d\test.cpp(301): warning C4305: “=”: 从“double”到“float”截断
+e:\chocolate-3d\chocolate-3d\test.cpp(302): warning C4305: “=”: 从“double”到“float”截断
+e:\chocolate-3d\chocolate-3d\test.cpp(337): warning C4305: “=”: 从“double”到“float”截断
+e:\chocolate-3d\chocolate-3d\test.cpp(338): warning C4305: “=”: 从“double”到“float”截断
+e:\chocolate-3d\chocolate-3d\test.cpp(340): warning C4305: “=”: 从“double”到“float”截断
+e:\chocolate-3d\chocolate-3d\test.cpp(341): warning C4305: “=”: 从“double”到“float”截断
+e:\chocolate-3d\chocolate-3d\test.cpp(345): warning C4305: “=”: 从“double”到“float”截断
+e:\chocolate-3d\chocolate-3d\test.cpp(358): warning C4305: “=”: 从“double”到“float”截断
+e:\chocolate-3d\chocolate-3d\test.cpp(359): warning C4305: “=”: 从“double”到“float”截断
+e:\chocolate-3d\chocolate-3d\test.cpp(365): warning C4305: “=”: 从“double”到“float”截断
+e:\chocolate-3d\chocolate-3d\test.cpp(367): warning C4305: “=”: 从“double”到“float”截断
+e:\chocolate-3d\chocolate-3d\test.cpp(368): warning C4305: “=”: 从“double”到“float”截断
+e:\chocolate-3d\chocolate-3d\test.cpp(369): warning C4305: “=”: 从“double”到“float”截断
+e:\chocolate-3d\chocolate-3d\test.cpp(370): warning C4305: “=”: 从“double”到“float”截断
+e:\chocolate-3d\chocolate-3d\test.cpp(379): warning C4305: “=”: 从“double”到“float”截断
+e:\chocolate-3d\chocolate-3d\test.cpp(389): warning C4305: “=”: 从“double”到“float”截断
+e:\chocolate-3d\chocolate-3d\test.cpp(393): warning C4305: “=”: 从“double”到“float”截断
+e:\chocolate-3d\chocolate-3d\test.cpp(394): warning C4305: “=”: 从“double”到“float”截断
+e:\chocolate-3d\chocolate-3d\test.cpp(395): warning C4305: “=”: 从“double”到“float”截断
   GEngine.cpp
 e:\chocolate-3d\chocolate-3d\gengine.cpp(37): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
 e:\chocolate-3d\chocolate-3d\gengine.cpp(38): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
@@ -63,15 +52,8 @@ e:\chocolate-3d\chocolate-3d\gengine.cpp(389): warning C4018: “<”: 有符号
 e:\chocolate-3d\chocolate-3d\gengine.cpp(461): warning C4018: “<”: 有符号/无符号不匹配
 e:\chocolate-3d\chocolate-3d\gengine.cpp(498): warning C4018: “<”: 有符号/无符号不匹配
 e:\chocolate-3d\chocolate-3d\gengine.cpp(522): warning C4018: “<”: 有符号/无符号不匹配
-e:\chocolate-3d\chocolate-3d\gengine.cpp(593): warning C4018: “<”: 有符号/无符号不匹配
-e:\chocolate-3d\chocolate-3d\gengine.cpp(632): warning C4018: “<”: 有符号/无符号不匹配
-  Usefull.cpp
-  Texture.cpp
-  Model.cpp
-c:\program files (x86)\microsoft visual studio\2017\community\vc\tools\msvc\14.10.25017\include\utility(140): warning C4244: “初始化”: 从“const double”转换到“float”，可能丢失数据
-  e:\chocolate-3d\chocolate-3d\asset\model.cpp(393): note: 参见对正在编译的函数 模板 实例化“std::pair<unsigned int,float>::pair<unsigned int,double,void,0>(const std::pair<unsigned int,double> &)”的引用
-  e:\chocolate-3d\chocolate-3d\asset\model.cpp(393): note: 参见对正在编译的函数 模板 实例化“std::pair<unsigned int,float>::pair<unsigned int,double,void,0>(const std::pair<unsigned int,double> &)”的引用
-  Material.cpp
+e:\chocolate-3d\chocolate-3d\gengine.cpp(562): warning C4018: “<”: 有符号/无符号不匹配
+e:\chocolate-3d\chocolate-3d\gengine.cpp(579): warning C4018: “<”: 有符号/无符号不匹配
   正在生成代码...
 e:\chocolate-3d\chocolate-3d\test.cpp(121): warning C4715: “WndProc”: 不是所有的控件路径都返回值
   Chocolate-3D.vcxproj -> E:\Chocolate-3D\Debug\Chocolate-3D.exe

@@ -32,7 +32,7 @@ PassOperation::PassOperation()
 {
 	type = Pass_Operation_Draw;
 	memset(threadSize, 0, sizeof(threadSize));
-	resourceID = 0;
+	targetID = 0;
 	memset(value, 0, sizeof(value));
 }
 
@@ -56,7 +56,7 @@ PassOperation::PassOperation(const json11::Json& obj, const unordered_map<string
 		if (!obj["target"].is_string() || !subresource.count(obj["target"].string_value()))
 			throw exception("Parse PassOperation Error");
 		string key = obj["target"].string_value();
-		resourceID = subresource.find(key)->second;
+		targetID = subresource.find(key)->second;
 
 		if (!obj["value_type"].is_string() || !obj["value"].is_array())
 			throw exception("Parse PassOperation Error");
@@ -106,7 +106,7 @@ PassOperation::PassOperation(const json11::Json& obj, const unordered_map<string
 		if (!obj["target"].is_string() || !subresource.count(obj["target"].string_value()))
 			throw exception("Parse PassOperation Error");
 		string key = obj["target"].string_value();
-		resourceID = subresource.find(key)->second;
+		targetID = subresource.find(key)->second;
 
 	}
 	else if (type == Pass_Operation_Draw)
@@ -243,13 +243,15 @@ void Effect::DeleteResource(const string& type, const int& id)
 	else if (type == "sampler_state")  PipeLine::SamplerState().Delete(id);
 	else if (type == "view_port")  PipeLine::ViewPort().Delete(id);
 	else if (type == "resource")  PipeLine::Resources().Delete(id);
+	else throw exception("Unknow Resource Type");
 }
 
 
 Effect* Effect::Create(const string & filePath)
 {
 	Effect* effect = new Effect();
-	try {
+	try 
+	{
 		ifstream file(filePath);
 		if (!file)
 		{
@@ -271,6 +273,12 @@ Effect* Effect::Create(const string & filePath)
 		if (!json["resource"].is_object()) throw exception(("Error: can not read \"resource\". " + filePath).c_str());
 		if (!json["pass"].is_object()) throw exception(("Error: can not read \"pass\". " + filePath).c_str());
 		if (!json["renderer"].is_object()) throw exception(("Error: can not read \"renderer\". " + filePath).c_str());
+		if (!json["config"].is_object()) throw exception(("Error: can not read \"config\". " + filePath).c_str());
+
+		//Load InputLayout:
+		if (!json["config"]["input_layout"].is_string()) throw exception(("Error: can not read \"input_layout\". " + filePath).c_str());
+		effect->inputLayout = PipeLine::InputLayout().Create(workingFolder + json["config"]["input_layout"].string_value(),"main");
+		if(effect->inputLayout < 0) throw exception(("Error: can not create \"input_layout\" : " + workingFolder + json["config"]["input_layout"].string_value()).c_str());
 
 		//Load Resources:
 		auto& resource = json["resource"].object_items();
@@ -310,7 +318,6 @@ Effect* Effect::Create(const string & filePath)
 				effect->renderers[e.first].push_back(passName[pname.string_value()]);
 			}
 		}
-
 	}
 	catch (exception ex)
 	{

@@ -537,102 +537,68 @@ void GEngine::UnloadModel(UINT modelID)
 
 }
 
-void GEngine::Render()
-{
-	//if(!UpdateFrameBuffer())
-	//	MessageBox(0, L"UpdateConstantBuffer Error!", L"Error!", MB_OK);
-	//if(!UpdateLightBuffer())
-	//	MessageBox(0, L"UpdateLightBuffer Error!", L"Error!", MB_OK);
-
-	//Tiling----------------------
-	//if (
-	//	oldResolutionX != frameData.screenDimensions[0] ||
-	//	oldResolutionY != frameData.screenDimensions[1] ||
-	//	memcmp(&oldProjection, &frameData.projection, sizeof(float[16])) != 0
-	//	)
-	//{
-	//	//Update tiles
-	//	if (!Tiling())
-	//		MessageBox(0, L"Tilling Error!", L"Error!", MB_OK);
-	//	oldResolutionX = frameData.screenDimensions[0];
-	//	oldResolutionY = frameData.screenDimensions[1];
-	//	memcpy(oldProjection, frameData.projection, sizeof(float[16]));
-	//}
-
-
-
-
-	map< int, ModelResource>::iterator it = modelList.begin();
-	while (it != modelList.end())
-	{
-		RenderModel(&(it->second));
-		it++;
-	}
-	//Swap();
-}
-
 void GEngine::Render(const Pass &pass)
 {
-	PipeLine::DepthStencilState().Apply(pass.depthStencilStateID, 1);
-	float bf[] = { 1,1,1,1 };
-	PipeLine::BlendState().Apply(pass.blendStateID, bf, 0xffffffff);
-	PipeLine::RasterizorState().Apply(pass.rasterizorStateID);
-
-	PipeLine::ViewPort().Apply(pass.viewPortID);
-	//UpdateViewPort();
-
-	//Activate Shaders
-	PipeLine::VertexShader().Activate(pass.vertexShaderID);
-	PipeLine::PixelShader().Activate(pass.pixelShaderID);
-	PipeLine::GeometryShader().Activate(pass.geometryShaderID);
-
-	//Set primative Topology
-	PipeLine::SetPrimitiveType(pass.topology);
-
-	//Set resource binding
-	for (int i = 0; i < pass.resourceBinding.size(); i++)
-	{
-		const BindingRule &bind = pass.resourceBinding[i];
-		PipeLine::Resources().SetBinding(bind.stages, bind.flag, bind.slot, bind.resourceID);
-	}
-	
-	//Set sampler binding
-	for (auto& binding : pass.samplerBinding) 
-	{
-		PipeLine::SamplerState().Apply(binding.resourceID, binding.stages, binding.slot);
-	}
-
 	//Render
 	for (auto& op : pass.operations) 
 	{
 		if (op.type == Pass_Operation_Draw) 
 		{
+			PipeLine::DepthStencilState().Apply(pass.depthStencilStateID, 1);
+			float bf[] = { 1,1,1,1 };
+			PipeLine::BlendState().Apply(pass.blendStateID, bf, 0xffffffff);
+			PipeLine::RasterizorState().Apply(pass.rasterizorStateID);
+			//UpdateViewPort();
+			PipeLine::ViewPort().Apply(pass.viewPortID);
+			//Activate Shaders
+			PipeLine::VertexShader().Activate(pass.vertexShaderID);
+			PipeLine::PixelShader().Activate(pass.pixelShaderID);
+			PipeLine::GeometryShader().Activate(pass.geometryShaderID);
+
+			//Set primative Topology
+			PipeLine::SetPrimitiveType(pass.topology);
+
+			//Set resource binding
+			for (int i = 0; i < pass.resourceBinding.size(); i++)
+			{
+				const BindingRule &bind = pass.resourceBinding[i];
+				PipeLine::Resources().SetBinding(bind.stages, bind.flag, bind.slot, bind.resourceID);
+			}
+
+			//Set sampler binding
+			for (auto& binding : pass.samplerBinding)
+			{
+				PipeLine::SamplerState().Apply(binding.resourceID, binding.stages, binding.slot);
+			}
+			//Render
 			for (auto& e : modelList) 
 			{
 				RenderModel(&(e.second));
 			}
+			//Unbind
+			for (int i = 0; i < pass.resourceBinding.size(); i++)
+			{
+				const BindingRule &bind = pass.resourceBinding[i];
+				PipeLine::Resources().SetBinding(bind.stages, bind.flag, bind.slot, -1);
+			}
 		}
 		else if (op.type == Pass_Operation_Reset)
 		{
-			PipeLine::Resources().Reset(op.resourceID, op.value);
+			PipeLine::Resources().Reset(op.targetID, op.value);
 		}
 		else if (op.type == Pass_Operation_Generate_Mip)
 		{
-			PipeLine::Resources().GenerateMipMap(op.resourceID);
+			PipeLine::Resources().GenerateMipMap(op.targetID);
 		}
 	}
-	//map< int, ModelResource>::iterator it = modelList.begin();
-	//while (it != modelList.end())
-	//{
-	//	RenderModel(&(it->second));
-	//	it++;
-	//}
+}
 
-	//Unbind resources
-	for (int i = 0; i < pass.resourceBinding.size(); i++)
+void GEngine::Render(const string &renderer)
+{
+	vector<int> &passList = effect->renderers[renderer];
+	for (int id : passList)
 	{
-		const BindingRule &bind = pass.resourceBinding[i];
-		PipeLine::Resources().SetBinding(bind.stages, bind.flag, bind.slot, -1);//Unbind
+		Render(effect->passes[id]);
 	}
 }
 
@@ -676,12 +642,18 @@ int GEngine::CreateSurfaceRec(float width, float hieght, float leftTopX, float l
 
 bool GEngine::LoadEffect(const string & filePath)
 {
+	CloseEffect();
 	effect = Effect::Create(filePath);
-	return false;
+	PipeLine::InputLayout().Activate(effect->inputLayout);
+	return true;
 }
+
 void GEngine::CloseEffect()
 {
-	delete effect;
-	effect = NULL;
+	if (effect)
+	{
+		delete effect;
+		effect = NULL;
+	}
 }
 //

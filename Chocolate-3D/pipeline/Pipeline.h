@@ -68,11 +68,13 @@ private:
 	~PipeLine();
 	PipeLine(PipeLine const&);
 	PipeLine& operator=(PipeLine const&) { return *this; };
+
+	static bool Init();
+	static bool CreateSwapChain(UINT resolutionX, UINT resolutionY, HWND hwnd, bool fullScreen);
 	static ID3D11Device* pDevice;
 	static ID3D11DeviceContext* pContext;
 	static IDXGISwapChain* pSwapChain;
 	static HWND hwnd;
 	static int resolutionX;
 	static int resolutionY;
-	static bool CreateSwapChain(UINT resolutionX, UINT resolutionY, HWND hwnd, bool fullScreen);
 };

@@ -36,13 +36,11 @@ struct PassOperation
 {
 	PassOperationType type;
 	UINT threadSize[3];
-	UINT resourceID;
+	UINT targetID;
 	UINT value[4];
 	PassOperation();
 	PassOperation(const json11::Json& obj, const unordered_map<string, int>& resourceMap);
 };
-
-
 
 class Pass
 {
@@ -62,6 +60,7 @@ public:
 
 	Pass();
 	Pass(const json11::Json& obj, const unordered_map<string, unordered_map<string, int>>& resourceMap);
+
 private:
 	void Load(const string& key, const int& id);
 	void LoadSampler(int id, PipelineStage stage, int slot);
@@ -72,17 +71,14 @@ private:
 class Effect
 {
 public:
-	unordered_map<string, unordered_map<string, int>> resourceMap;
-
-	int inputLayout;
+	pair<size_t, size_t> resolution;
 	vector<Pass> passes;
-
 	unordered_map<string, vector<int>> renderers;
-
-	static Effect* Create(const string & filePath);
-	
+	static Effect* Create(const string & filePath); //User should delete effect to prevent memory leak.
+	int inputLayout;
 	~Effect();
 private:
+	unordered_map<string, unordered_map<string, int>> resourceMap;
 	Effect() {};
 	Effect(Effect const&) : Effect() {}
 	Effect& operator= (Effect const&) { return *this; }

@@ -30,10 +30,11 @@ public:
 	int LoadModel(Model &model);
 	void UnloadModel(UINT modelID);
 	void UpdateLight(vector<Light> lights);
-	void Render();
+
 	void Render(const Pass &pass);
-	//void RenderOpac(Pass pass);
-	//void RenderTransparent(Pass pass);
+
+	void Render(const string &renderer);
+	
 	int CreateSurfaceRec(float width, float hieght, float leftTopX, float leftTopY);
 	bool Tiling();
 	unsigned int depthStencilBufferID;

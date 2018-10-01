@@ -126,7 +126,7 @@ ResourceManager & PipeLine::Resources()
 	return ResourceManager::GetInstance();
 }
 
-bool PipeLine::Init(UINT resolutionX, UINT resolutionY, HWND hwnd, bool fullScreen)
+bool PipeLine::Init()
 {
 	Shutdown();
 	D3D_FEATURE_LEVEL featureLevels[] =
@@ -141,7 +141,13 @@ bool PipeLine::Init(UINT resolutionX, UINT resolutionY, HWND hwnd, bool fullScre
 	HRESULT result;
 	result = D3D11CreateDevice(0, D3D_DRIVER_TYPE_HARDWARE, NULL, D3D11_CREATE_DEVICE_BGRA_SUPPORT, featureLevels, numFeatureLevels, D3D11_SDK_VERSION, &pDevice, NULL, &pContext);
 	if (FAILED(result)) return false;
+	return true;
+}
 
+bool PipeLine::Init(UINT resolutionX, UINT resolutionY, HWND hwnd, bool fullScreen) 
+{
+	if (!Init()) 
+		return false;
 	if (!CreateSwapChain(resolutionX, resolutionY, hwnd, fullScreen))
 	{
 		Shutdown();
@@ -184,6 +190,12 @@ void PipeLine::Shutdown()
 
 bool PipeLine::CreateSwapChain(UINT resolutionX, UINT resolutionY, HWND hwnd, bool fullScreen)
 {
+	if (pSwapChain)
+	{
+		pSwapChain->Release();
+		pSwapChain = NULL;
+	}
+
 	DXGI_SWAP_CHAIN_DESC desc;
 	ZeroMemory(&desc, sizeof(desc));
 	desc.Windowed = !fullScreen;
@@ -253,5 +265,4 @@ void PipeLine::Swap()
 
 PipeLine::~PipeLine()
 {
-
 }

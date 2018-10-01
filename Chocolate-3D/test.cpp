@@ -193,118 +193,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 
 	engine.LoadEffect(workingFolder + "Effects\\test.json");
 
-	int il = PipeLine::InputLayout().Create(workingFolder + "Shaders\\DirectLightVS.hlsl", "main");
-	PipeLine::InputLayout().Activate(il);
-
-	DepthStencilDesc dsd;
-	dsd = FileLoader::LoadDepthStencilDesc(workingFolder + "Effects\\States\\DSS_Default.json");
-	int dssDefault = PipeLine::DepthStencilState().Create(dsd);
-	dsd = FileLoader::LoadDepthStencilDesc(workingFolder + "Effects\\States\\DSS_Read.json");
-	int dssRead = PipeLine::DepthStencilState().Create(dsd);
-	dsd = FileLoader::LoadDepthStencilDesc(workingFolder + "Effects\\States\\DSS_Disable.json");
-	int dssDisable = PipeLine::DepthStencilState().Create(dsd);
-
-	BlendDesc bd;
-	bd = FileLoader::LoadBlendDesc(workingFolder + "Effects\\States\\BS_Disable.json");
-	int bsDisable = PipeLine::BlendState().Create(bd);
-
-	RasterizerDesc rd = FileLoader::LoadRasterizerDesc(workingFolder + "Effects\\States\\RS_Default.json");
-	int rsDefault = PipeLine::RasterizorState().Create(rd);
-	rd = FileLoader::LoadRasterizerDesc(workingFolder + "Effects\\States\\RS_No_Cull.json");
-	int rsNoCull = PipeLine::RasterizorState().Create(rd);
-
-	ViewPortDesc vpd = FileLoader::LoadViewPort(workingFolder + "Effects\\States\\VP_Default.json");
-	int vpDefault = PipeLine::ViewPort().Create(vpd);
-	vpd = FileLoader::LoadViewPort(workingFolder + "Effects\\States\\VP_64.json");
-	int vp64 = PipeLine::ViewPort().Create(vpd);
-
-	SamplerDesc sd = FileLoader::LoadSamplerDesc(workingFolder + "Effects\\States\\SS_Default.json");
-	int def = PipeLine::SamplerState().Create(sd);
-	
-	sd = FileLoader::LoadSamplerDesc(workingFolder + "Effects\\States\\SS_Clamp.json");
-	int clamp = PipeLine::SamplerState().Create(sd);
-	
-
-	ResourceDesc voxelDesc = FileLoader::LoadResourceDesc(workingFolder + "Effects\\Resources\\voxel.json");
-	int vtex = PipeLine::Resources().Create(voxelDesc);
-
-	ResourceDesc dsbDesc = FileLoader::LoadResourceDesc(workingFolder + "Effects\\Resources\\DepthStencil.json");
-	int dsb = PipeLine::Resources().Create(dsbDesc);
-
-	//PipeLine::SamplerState().Apply(def, 0xffff, Slot_Sampler_Default);
-	//PipeLine::SamplerState().Apply(clamp, 0xffff, Slot_Sampler_Clamp);
-	//PipeLine::Resources().SetBinding(Stage_Output_Merge, Bind_Depth_Stencil, 0, dsb);
-	//PipeLine::Resources().SetBinding(Stage_Output_Merge, Bind_Render_Target, 0, PipeLine::Resources().GetBackBuffer());
-
-	BindingRule depth, back, sampler, samplerClamp;
-	depth.flag = Bind_Depth_Stencil;
-	depth.stages = Stage_Output_Merge;
-	depth.slot = 0;
-	depth.resourceID = dsb;
-
-	back.flag = Bind_Render_Target;
-	back.slot = 0;
-	back.stages = Stage_Output_Merge;
-	back.resourceID = PipeLine::Resources().GetBackBuffer();
-
-	sampler.slot = 0;
-	sampler.stages = Stage_Pixel_Shader;
-	sampler.resourceID = def;
-
-
-	PassOperation draw, resetDepth, resetBB;
-	draw.type = Pass_Operation_Draw;
-
-	float depthVal = 1.0f;
-	resetDepth.type = Pass_Operation_Reset;
-	resetDepth.resourceID = dsb;
-	resetDepth.value[0] = 1;
-	resetDepth.value[1] = *(UINT*)(&depthVal);
-
-	float color[] = { 0,0,0.5,0 };
-	resetBB.type = Pass_Operation_Reset;
-	resetBB.resourceID = PipeLine::Resources().GetBackBuffer();
-	memcpy(resetBB.value, color, sizeof(color));
-
-	BindingRule voxelTexture;
-	voxelTexture.resourceID = vtex;
-	float black[] = { 0.0f, 0.0f, 0.0f, 0.0f };
-	PipeLine::Resources().Reset(voxelTexture.resourceID, black);
-	voxelTexture.flag = Bind_Unordered_Access;
-	voxelTexture.stages = Stage_Output_Merge;
-	voxelTexture.slot = 4;
-
-	Pass directLight;
-	directLight.vertexShaderID = PipeLine::VertexShader().Create(workingFolder + "Shaders\\DirectLightVS.hlsl", "main");
-	directLight.pixelShaderID = PipeLine::PixelShader().Create(workingFolder + "Shaders\\DirectLightPS.hlsl", "main");
-	directLight.blendStateID = bsDisable;
-	directLight.depthStencilStateID = dssRead;
-	directLight.rasterizorStateID = rsDefault;
-	directLight.viewPortID = vpDefault;
-	directLight.resourceBinding = vector<BindingRule>({ depth, back });
-	directLight.samplerBinding.push_back(sampler);
-	directLight.operations = vector<PassOperation>({ resetBB, draw,  resetDepth });
-
-	Pass preZ;
-	preZ.vertexShaderID= PipeLine::VertexShader().Create(workingFolder + "Shaders\\PreZ\\VertexShader.hlsl", "main");
-	preZ.pixelShaderID = PipeLine::PixelShader().Create(workingFolder + "Shaders\\PreZ\\PixelShader.hlsl", "main");
-	preZ.blendStateID = bsDisable;
-	preZ.depthStencilStateID = dssDefault;
-	preZ.rasterizorStateID = rsDefault;
-	preZ.viewPortID = vpDefault;
-	preZ.resourceBinding = vector<BindingRule>({ depth });
-	preZ.samplerBinding.push_back(sampler);
-	preZ.operations.push_back(draw);
-
-	Pass voxelization;
-	voxelization.vertexShaderID = PipeLine::VertexShader().Create(workingFolder + "Shaders\\VoxelizationVS.hlsl", "main");
-	voxelization.pixelShaderID= PipeLine::PixelShader().Create(workingFolder + "Shaders\\VoxelizationPS.hlsl", "main");
-	voxelization.geometryShaderID= PipeLine::GeometryShader().Create(workingFolder + "Shaders\\VoxelizationGS.hlsl", "main");
-	voxelization.resourceBinding.push_back(voxelTexture);
-	voxelization.blendStateID = bsDisable;
-	voxelization.depthStencilStateID = dssDisable;
-	voxelization.rasterizorStateID = rsNoCull;
-	voxelization.viewPortID = vp64;
 
 	//Pass visualization;
 	//visualization.vertexShaderID = engine.vertexShader.Create(workingFolder + "Shaders\\voxelization\\vis.hlsl", "main");
@@ -321,21 +209,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 	//voxelView.slot = 0;
 	//voxelView.resourceID = vtex;
 	//visualization.bindingTable.push_back(voxelView);
-
-	BindingRule voxelT;
-	voxelT.flag = Bind_Shader_Resource;
-	voxelT.stages = Stage_Pixel_Shader;
-	voxelT.slot = Slot_Texture_Voxel;
-	voxelT.resourceID = vtex;
-
-	Pass coneTracing;
-	coneTracing.vertexShaderID = directLight.vertexShaderID;
-	coneTracing.pixelShaderID= PipeLine::PixelShader().Create(workingFolder + "Shaders\\\ConeTracingPS.hlsl", "main");
-	coneTracing.resourceBinding.push_back(voxelT);
-	coneTracing.blendStateID = bsDisable;
-	coneTracing.depthStencilStateID = dssRead;
-	coneTracing.rasterizorStateID = rsDefault;
-	coneTracing.viewPortID = vpDefault;
 
 
 
@@ -558,51 +431,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 			}
 		}
 
-		float color[] = { 0,0,0.5,0 };
-		//PipeLine::Resources().Reset(PipeLine::Resources().GetBackBuffer(), color);
-		//PipeLine::Resources().ResetDSV(dsb, D3D11_CLEAR_DEPTH, 1.0f, 0);
 		engine.UpdateFrameBuffer();
 		engine.UpdateLightBuffer();
+		engine.Render("voxel_cone_tracing");
 
-
-		if (false)
-		{
-			in->visable = true;
-			//in2->visable = true;
-			//pW1->visable = true;
-			//pW2->visable = true;
-			//pR->visable = true;
-			//pB->visable = true;
-			pv->visable = false;
-
-			PipeLine::Resources().Reset(vtex, black);
-			engine.Render(voxelization);
-			PipeLine::Resources().GenerateMipMap(vtex);
-
-			engine.Render(preZ);
-
-			if (false)
-			{
-				PipeLine::Resources().Reset(dsb, D3D11_CLEAR_DEPTH, 1.0f, 0);
-				in->visable = false;
-				//in2->visable = false;
-				//pW1->visable = false;
-				//pW2->visable = false;
-				//pR->visable = false;
-				//pB->visable = false;
-				pv->visable = true;
-				//engine.Render(visualization);
-			}
-			else
-			{
-				engine.Render(coneTracing);
-			}
-		}
-		else
-		{
-			engine.Render(preZ);
-			engine.Render(directLight);
-		}
 		PipeLine::Swap();
 	}
 }
