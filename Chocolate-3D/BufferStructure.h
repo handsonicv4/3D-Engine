@@ -22,6 +22,7 @@ struct FrameBufferData
 	float voxelSize[3];
 	float pad2;
 
+	float	lightVP[16];
 };
 
 struct ObjBufferData
@@ -57,5 +58,6 @@ struct Light
 	float color[4];
 	float direction[3];//sport, directional
 	float angleCos;
+	
 	//float range;//sport, point
 };

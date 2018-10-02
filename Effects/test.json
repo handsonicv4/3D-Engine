@@ -15,6 +15,7 @@
     },
     "pixel_shader": {
       "direct_light": "Shaders\\DirectLightPS.hlsl",
+      "depth_visualization": "Shaders\\DepthPS.hlsl",
       "pre_z": "Shaders\\PreZ\\PixelShader.hlsl",
       "voxelization": "Shaders\\VoxelizationPS.hlsl",
       "cone_tracing": "Shaders\\ConeTracingPS.hlsl"
@@ -37,15 +38,64 @@
     },
     "view_port": {
       "default": "States\\VP_Default.json",
-      "voxelization": "States\\VP_64.json"
+      "voxelization": "States\\VP_64.json",
+      "shadow_map": "States\\VP_SM.json"
     },
     "resource": {
       "depth_stencil": "Resources\\DepthStencil.json",
-      "voxel_texture": "Resources\\voxel.json"
+      "voxel_texture": "Resources\\voxel.json",
+      "shadow_map": "Resources\\ShadowMap.json"
     }
   },
 
   "pass": {
+    //-------------------------------------------------Depth Visualization---------------------------------------------
+    "depth": {
+      "name": "depth_visualization",
+      "vertex_shader": "direct_light",
+      "pixel_shader": "depth_visualization",
+      "rasterizer_state": "default",
+      "depth_stencil_state": "default",
+      "blend_state": "disable",
+      "view_port": "shadow_map",
+      "topology": "trianglelist",
+      "sampler_state": [
+        {
+          "name": "default",
+          "stage": "pixel_shader",
+          "slot": 0
+        }
+      ],
+      "resource": [
+        {
+          "name": "shadow_map",
+          "binding_flag": "render_target",
+          "stage": "output_merge",
+          "slot": 0
+        },
+        {
+          "name": "depth_stencil",
+          "binding_flag": "depth_stencil",
+          "stage": "output_merge",
+          "slot": 0
+        }
+      ],
+      "operation": [
+        {
+          "type": "reset",
+          "target": "depth_stencil",
+          "value": [ 1.0 ],
+          "value_type": "depth"
+        },
+        {
+          "type": "reset",
+          "target": "shadow_map",
+          "value": [ 0, 0, 0, 0 ],
+          "value_type": "float"
+        },
+        { "type": "draw" }
+      ]
+    },
 
     //-------------------------------------------------Pre Z---------------------------------------------
     "pre_z": {
@@ -98,9 +148,20 @@
           "name": "default",
           "stage": "pixel_shader",
           "slot": 0
+        },
+        {
+          "name": "clamp",
+          "stage": "pixel_shader",
+          "slot": 1
         }
       ],
       "resource": [
+        {
+          "name": "shadow_map",
+          "binding_flag": "shader_resource",
+          "stage": "pixel_shader",
+          "slot": 10
+        },
         {
           "name": "back_buffer",
           "binding_flag": "render_target",
@@ -141,9 +202,20 @@
           "name": "default",
           "stage": "pixel_shader",
           "slot": 0
+        },
+        {
+          "name": "clamp",
+          "stage": "pixel_shader",
+          "slot": 1
         }
       ],
       "resource": [
+        {
+          "name": "shadow_map",
+          "binding_flag": "shader_resource",
+          "stage": "pixel_shader",
+          "slot": 10
+        },
         {
           "name": "back_buffer",
           "binding_flag": "render_target",
@@ -173,6 +245,7 @@
         { "type": "draw" }
       ]
     },
+
     //-------------------------------------------------Cone Tracing---------------------------------------------
     "cone_tracing": {
       "name": "cone_tracing",
@@ -196,6 +269,12 @@
         }
       ],
       "resource": [
+        {
+          "name": "shadow_map",
+          "binding_flag": "shader_resource",
+          "stage": "pixel_shader",
+          "slot": 10
+        },
         {
           "name": "back_buffer",
           "binding_flag": "render_target",
@@ -241,6 +320,9 @@
       "voxelization",
       "pre_z",
       "cone_tracing"
+    ],
+    "depth": [
+      "depth"
     ]
   }
 }

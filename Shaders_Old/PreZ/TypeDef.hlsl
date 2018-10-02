@@ -1,4 +1,3 @@
-
 struct VSinput
 {
 	float3 position : POSITION;
@@ -15,11 +14,6 @@ struct VSinput
 struct PSinput
 {
 	float4 position : SV_POSITION;
-	float4 positionWorld : POSITION0;
-	float4 positionLight : POSITION1;
-	float3 normal : NORMAL;
-	float3 tangent : TANGENT;
-	float3 bitangent : BINORMAL;
 	float2 tex : TEXCOORD0;
-	uint instanceMaterialID : TEXCOORD1;
 };
+

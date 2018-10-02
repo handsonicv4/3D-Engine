@@ -38,30 +38,10 @@ struct Pixel
 
 Texture2D diffuseTexture: register(t0);
 Texture2D normalTexture: register(t2);
-Texture2D shadowMap: register(t10);
-
 SamplerState samplerState: register(s0);
 SamplerState samplerStateC: register(s1);
 StructuredBuffer<MaterialType> instanceMaterial : register(t6);
 StructuredBuffer<Light> Lights: register(t7);
-
-bool IsInShadow(uniform float4 pixelLightPos, uniform float bias)
-{
-	float2 projectTexCoord;
-	bool result = false;
-	projectTexCoord.x = pixelLightPos.x / pixelLightPos.w / 2.0f + 0.5f;
-	projectTexCoord.y = -pixelLightPos.y / pixelLightPos.w / 2.0f + 0.5f;
-	if ((saturate(projectTexCoord.x) == projectTexCoord.x) && (saturate(projectTexCoord.y) == projectTexCoord.y))
-	{
-		float depthValue = shadowMap.Sample(samplerStateC, projectTexCoord).r;
-		float pixel_light_z = pixelLightPos.z / pixelLightPos.w - bias;
-		if (pixel_light_z > depthValue)
-		{
-			result = true;
-		}
-	}
-	return result;
-}
 
 Pixel GetPixel(uniform PSinput input)
 {

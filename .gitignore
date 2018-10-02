@@ -2,3 +2,8 @@
 ## Folders##
 ##############################
 .vs
+Debug
+Release
+Chocolate-3D\Debug
+Chocolate-3D\Release
+Chocolate-3D\x64

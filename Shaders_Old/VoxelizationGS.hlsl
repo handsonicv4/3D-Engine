@@ -33,7 +33,6 @@ void main(triangle PSinput input[3], inout TriangleStream<PSinput> outStream)
 		output.bitangent = input[i].bitangent;
 		output.tex = input[i].tex;
 		output.instanceMaterialID = input[i].instanceMaterialID;
-		output.positionLight = input[i].positionLight;
 		if (axis_flag == 0)//X
 		{
 			output.position = float4(input[i].position.y, input[i].position.z, 0, 1);

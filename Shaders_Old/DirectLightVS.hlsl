@@ -33,7 +33,5 @@ PSinput main(VSinput input)
 	output.bitangent = normalize(mul(output.bitangent, (float3x3)instanceData[input.instanceID].world));
 	output.tex = input.tex;
 	output.instanceMaterialID = instanceData[input.instanceID].instanceMaterialID;
-
-	output.positionLight = mul(output.positionWorld, g_LightVP);
     return output;
 }

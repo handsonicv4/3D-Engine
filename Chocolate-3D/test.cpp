@@ -13,6 +13,7 @@ bool gi = true;
 bool c = false;
 Instance *k1;
 Instance *k3;
+Instance *dragon;
 int counter = 0;
 GEngine engine;
 aiVector3D moveVec(0, 0, 0);
@@ -48,8 +49,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT umessage, WPARAM wparam, LPARAM lparam)
 		{
 			int xPosRelative = raw->data.mouse.lLastX;
 			int yPosRelative = raw->data.mouse.lLastY;
-			engine.camera.SpinYaw(-0.6f*xPosRelative);
-			engine.camera.SpinPitch(-0.6f*yPosRelative );
+			//engine.camera.SpinYaw(-0.6f*xPosRelative);
+			//engine.camera.SpinPitch(-0.6f*yPosRelative );
 		}
 		break;
 	}
@@ -122,6 +123,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT umessage, WPARAM wparam, LPARAM lparam)
 
 
 int flag = 0;
+float speed = 0.2;
 void CALLBACK Timer15ms(HWND hWnd, UINT nMsg, UINT nTimerid, DWORD dwTime)
 {
 	//Camera Move
@@ -129,6 +131,12 @@ void CALLBACK Timer15ms(HWND hWnd, UINT nMsg, UINT nTimerid, DWORD dwTime)
 	aiVector3D move;
 	k1->SpinYaw(0.8);
 	k3->SpinPitch(1.2);
+	dragon->SpinYaw(0.8);
+
+	bool forward = true;
+	aiQuaternion a;
+	
+	//k1->SetRotation(aiQuaternion(aiVector3D(0, 1, 0), 0.8));
 
 	if (moveVec.Length() > 0.0001)
 	{
@@ -259,26 +267,41 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 	x.direction[2] = 0.0f;
 	engine.lightList.push_back(x);
 
-	Model amodel, bmodel;
-	bmodel.LoadFileD3D("E:\\bob_lamp_update\\bob_lamp_update.md5mesh");
+	Model amodel, bmodel, dmodel;
+	//bmodel.LoadFileD3D(workingFolder + "Models\\bob_lamp_update.md5mesh");
 	//amodel.LoadFileD3D("E:\\Wolf\\Wolf.fbx");
 	amodel.LoadFileD3D(workingFolder+"Models\\TestModel.fbx");
+	dmodel.LoadFileD3D(workingFolder+"Models\\dragon.obj");
 
 	//bmodel.LoadFileD3D("E:\\3d121007ms\\魔兽世界模型の arcticcondor\\Creature\\Arcticcondor\\arcticcondor.obj");
 
 	int mid = engine.LoadModel(amodel);
 	engine.LoadModel(bmodel);
+	engine.LoadModel(dmodel);
+
+	Instance* dr = dmodel.CreateInstance();
+	dr->SetScaling(0.3);
+	dr->useInstanceMaterial = true;
+	dr->SetPosition(0, -4.5, -1.5);
+	dr->material.refractiveIndex = 1.5;
+	dr->material.textureEnableFlags = 0x00;
+	dr->material.specularHardness = 30;
+	dr->material.specularPower = 3;
+	dr->material.opacity = 0.1;
+	dragon = dr;
+
 	//amodel.Purge();
-	Instance *in1 = bmodel.CreateInstance();
-	in1->SetScaling(0.7);
-	in1->SpinPitch(-89);
-	in1->SetPosition(1,-4.5,-1);
-	in1->useInstanceMaterial = true;
-	in1->material.opacity = 0.1;
-	in1->material.refractiveIndex = 1.5;
-	in1->material.textureEnableFlags = 0x00;
-	in1->material.specularHardness = 30;
-	in1->material.specularPower = 3;
+	//Instance *in1 = bmodel.CreateInstance();
+	//in1->SetScaling(0.7);
+	//in1->SpinPitch(-89);
+	//in1->SetPosition(1,-4.5,-1);
+	//in1->useInstanceMaterial = true;
+	//in1->material.opacity = 0.1;
+	//in1->material.refractiveIndex = 1.5;
+	//in1->material.textureEnableFlags = 0x00;
+	//in1->material.specularHardness = 30;
+	//in1->material.specularPower = 3;
+
 	Instance *in = amodel.CreateInstance();
 	in->animationID = 0;
 	in->animationTime = 0;
@@ -302,7 +325,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 	in->material.emissiveColor[2] = 0.9;
 
 	instants.push_back(in);
-	instants.push_back(in1);
+	//instants.push_back(in1);
 
 	Model rect,box;
 	rect.LoadFileD3D(workingFolder + "Models\\Rect.obj");
@@ -358,19 +381,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 	k->material.diffuseColor[0] = 0.7;
 	k->material.diffuseColor[1] = 0.3;
 	k->material.diffuseColor[2] = 0;
+	k->material.specularPower = 1;
+	k->material.specularHardness = 5;
 
 	k2->SetPosition(2.0, -3.5, 3.5);
-	k2->SetScaling(2);
+	k2->SetScaling(1.3);
 	k2->useInstanceMaterial = true;
 	k2->material.diffusePower = 0.1;
-
 	k2->material.emissivity = 0.9;
 	k2->material.emissiveColor[0] = 0.4;
 	k2->material.emissiveColor[1] = 0.9;
 	k2->material.emissiveColor[2] = 0.4;
 
-	k3->SetPosition(-2, 0, -2);
-	k3->SetScaling(2);
+	k3->SetPosition(-2, 0, -0.5);
+	k3->SetScaling(1.5);
 	k3->verticalLock = false;
 	k3->SpinRoll(45);
 	k3->SpinPitch(45);
@@ -380,19 +404,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 	k3->material.specularHardness = 30;
 
 
-	k1->SetPosition(2, 0.5, -1);
-	k1->SetScaling(1.5);
+	k1->SetPosition(-3.2, -3.5, -2);
+	k1->SetScaling(1.3);
 	k1->verticalLock = false;
 	k1->SpinRoll(45);
 	k1->SpinPitch(45);
 	k1->useInstanceMaterial = true;
-	k1->material.opacity = 0.1;
-	k1->material.refractiveIndex = 1.5;
-	k1->material.specularPower = 2;
-	k1->material.specularHardness = 30;
-	k1->material.specularColor[0] = 0.2;
-	k1->material.specularColor[1] = 0.2;
-	k1->material.specularColor[2] = 0.8;
+	k1->material.diffusePower = 0.1;
+	k1->material.emissivity = 0.9;
+	k1->material.emissiveColor[0] = 0.6;
+	k1->material.emissiveColor[1] = 0.6;
+	k1->material.emissiveColor[2] = 0.9;
+	k1->material.specularPower = 1;
+	k1->material.specularHardness = 10;
+
 
 	RAWINPUTDEVICE device;
 	device.usUsagePage = 0x01;
@@ -418,6 +443,23 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 	SetCursorPos(p2.x, p2.y);
 	ShowCursor(false);
 	int time = SetTimer(window.hwnd, 1, 15, Timer15ms);
+
+
+
+	auto cam = engine.camera;
+	Camera lc;
+	lc.verticalLock = false;
+	lc.SetPosition(engine.lightList[0].direction[0], engine.lightList[0].direction[1] + 2, engine.lightList[0].direction[2]);
+	lc.FaceTo(aiVector3D(0, -1, 0));
+	lc.fovY = 120;
+	lc.screenAspect = 1;
+	lc.zNear = 0.1f;
+	lc.zFar = 1000;
+	
+	lc.UpdateProjectionMatrix();
+	
+	engine.mainLight = lc;
+
 	while (true)
 	{
 		while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE | PM_NOYIELD))
@@ -430,9 +472,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 				DispatchMessage(&msg);
 			}
 		}
-
+		engine.camera = lc;
 		engine.UpdateFrameBuffer();
 		engine.UpdateLightBuffer();
+		engine.Render("depth");
+		engine.camera = cam;
+		engine.UpdateFrameBuffer();
 		engine.Render("voxel_cone_tracing");
 
 		PipeLine::Swap();

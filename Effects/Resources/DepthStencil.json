@@ -2,7 +2,7 @@
   "name": "depth_stencil_buffer",
   "type": "texture2d",
   "size": [ 1280, 720 ],
-  "bind_flag": [ "depth_stencil" ],
+  "bind_flag": [ "depth_stencil"],
   "access": "default",
   "mip_level": 1,
   "format": "d24_unorm_s8_uint"

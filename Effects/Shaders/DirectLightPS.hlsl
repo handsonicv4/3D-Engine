@@ -14,7 +14,16 @@ float4 main(PSinput input) : SV_TARGET
 	if (p.opacity < 0.05)
 		discard;
 
-	float3 color = Diffuse(p)*p.diffuseColor+ Specular(p)*p.specularColor +p.emissivity*p.emissiveColor;
+
+	float3 color = p.emissivity*p.emissiveColor;
+	float bias = 0.0001f;
+	bool shadow = IsInShadow(input.positionLight, bias);
+	if (shadow)
+	{
+		return float4(color, p.opacity);
+	}
+
+	color = Diffuse(p)*p.diffuseColor+ Specular(p)*p.specularColor + color;
 	float4 result = float4(color, p.opacity);
-    return   result;
+    return result;
 }

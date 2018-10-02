@@ -258,12 +258,13 @@ bool GEngine::UpdateFrameBuffer()
 	aiMatrix4x4 projection = camera.GetProjectionMatrix();
 	aiMatrix4x4 projectionInv = projection;
 	projectionInv.Inverse();
-	//aiMatrix4x4 viewProjection = camera.GetProjectionMatrix()*camera.GetViewMatrix();
+	aiMatrix4x4 lightVP = mainLight.GetProjectionMatrix()*mainLight.GetViewMatrix();
 
 	memcpy(&frameData.projection, &projection, sizeof(float[16]));
 	memcpy(&frameData.projectionInv, &projectionInv, sizeof(float[16]));
 	memcpy(&frameData.voxelDimention, &voxelDimention, sizeof(float[3]));
 	memcpy(&frameData.voxelSize, &voxelSize, sizeof(float[3]));
+	memcpy(&frameData.lightVP, &lightVP, sizeof(float[16]));
 	//memcpy(&frameData.viewProjection, &viewProjection, sizeof(float[16]));
 
 	aiVector3D position = camera.GetPosition();

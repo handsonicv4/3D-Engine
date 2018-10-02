@@ -14,7 +14,7 @@ cbuffer cbPerObject : register(b0)
 
 cbuffer cbPerFrame : register(b1)
 {
-	matrix	g_Projection					: packoffset(c0);
+	matrix	g_Projection						: packoffset(c0);
 	matrix	g_ProjectionInv				: packoffset(c4);
 	float3	g_CameraPos					: packoffset(c8);
 	float		g_fAlphaTest					: packoffset(c8.w);
@@ -24,7 +24,4 @@ cbuffer cbPerFrame : register(b1)
 	uint3	g_VoxelDimention			: packoffset(c10);
 	uint		pad1								: packoffset(c10.w);
 	float3	g_VoxelSize						: packoffset(c11);
-	//
-	uint		pad2								: packoffset(c11.w);
-	matrix	g_LightVP								: packoffset(c12);
 };

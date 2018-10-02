@@ -2,7 +2,7 @@
 
 PSinput main(VSinput input)
 {
-    PSinput output;
+	PSinput output;
     // Change the position vector to be 4 units for proper matrix calculations.
 	float4 position = float4(input.position, 1.0f);
 	output.position= float4(input.position, 1.0f);
@@ -25,15 +25,14 @@ PSinput main(VSinput input)
 		}
 	}
 	output.positionWorld = mul(output.position, instanceData[input.instanceID].world);
-	output.position = mul(output.position, instanceData[input.instanceID].wVP);
 
+	float4 hVoxScale = float4( 0.5*g_VoxelDimention*g_VoxelSize,1);
+	output.position = output.positionWorld / 5.0;
 
 	output.normal = normalize( mul(output.normal, (float3x3)instanceData[input.instanceID].world));
 	output.tangent= normalize(mul(output.tangent, (float3x3)instanceData[input.instanceID].world));
 	output.bitangent = normalize(mul(output.bitangent, (float3x3)instanceData[input.instanceID].world));
 	output.tex = input.tex;
 	output.instanceMaterialID = instanceData[input.instanceID].instanceMaterialID;
-
-	output.positionLight = mul(output.positionWorld, g_LightVP);
     return output;
 }

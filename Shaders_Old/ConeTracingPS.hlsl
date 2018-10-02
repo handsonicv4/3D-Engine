@@ -119,22 +119,18 @@ float4 main(PSinput input) : SV_TARGET
 	float3 pos = WorldToVoxelUVW(p.position);
 	float3 cameraDir = normalize(g_CameraPos - p.position);
 
-	float3 diffuse = (float3)0;
-	float3 specular = (float3)0;
-	float3 rs = (float3)0;
-
-	if (!IsInShadow(input.positionLight, 0.0001f))
-	{
-		diffuse = Diffuse(p);
-		specular = Specular(p);
-	}
+	float3 diffuse = Diffuse(p);
 	diffuse += p.diffusePower*TraceDiffuseCones(pos, p.normal, voxelStride*2, 1.4);
 
+	float3 specular = 0;
 	if (p.specularPower > 1)
 	{
+		specular = Specular(p);
 		float3 inSpecDir = reflect(-cameraDir, p.normal);
 		specular += p.specularPower*TraceCone(pos + input.normal / g_VoxelDimention * 3, 0.2, voxelStride * 3, 1.2, inSpecDir);
 	}
+
+	float3 rs = 0;
 
 	if (p.refractiveIndex > 1.1 && p.opacity<1)
 	{

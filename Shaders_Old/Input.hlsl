@@ -15,8 +15,7 @@ struct VSinput
 struct PSinput
 {
 	float4 position : SV_POSITION;
-	float4 positionWorld : POSITION0;
-	float4 positionLight : POSITION1;
+	float4 positionWorld : POSITION;
 	float3 normal : NORMAL;
 	float3 tangent : TANGENT;
 	float3 bitangent : BINORMAL;

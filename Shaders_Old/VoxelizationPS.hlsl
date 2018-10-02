@@ -32,12 +32,7 @@ float4 main(PSinput input) : SV_TARGET
 	if (p.opacity < 0.05)
 		discard;
 
-	float3 color = p.emissivity*p.emissiveColor;
-	if (!IsInShadow(input.positionLight, 0.0001f))
-	{
-		color = Diffuse(p)*p.diffuseColor + color;
-	}
-
+	float3 color = Diffuse(p)*p.diffuseColor+p.emissivity*p.emissiveColor;
 	float4 result = float4(color, p.opacity);
 
 	uint3 vposition = WorldToVoxelPosition(p.position);

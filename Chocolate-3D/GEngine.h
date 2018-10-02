@@ -21,6 +21,7 @@ public:
 	~GEngine();
 
 	Camera camera;
+	Camera mainLight;
 	vector<Light> lightList;
 
 	bool Init(HWND window, bool fullscreen);
