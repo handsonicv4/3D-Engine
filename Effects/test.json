@@ -97,11 +97,14 @@
       ]
     },
 
+
+
+
     //-------------------------------------------------Pre Z---------------------------------------------
     "pre_z": {
       "name": "pre_z",
-      "vertex_shader": "pre_z",
-      "pixel_shader": "pre_z",
+      "vertex_shader": "direct_light",
+      "pixel_shader": "depth_visualization",
       "rasterizer_state": "default",
       "depth_stencil_state": "default",
       "blend_state": "disable",
@@ -176,6 +179,7 @@
         }
       ],
       "operation": [
+
         {
           "type": "reset",
           "target": "back_buffer",

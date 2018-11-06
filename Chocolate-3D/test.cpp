@@ -13,6 +13,7 @@ bool gi = true;
 bool c = false;
 Instance *k1;
 Instance *k3;
+Instance *k;
 Instance *dragon;
 int counter = 0;
 GEngine engine;
@@ -124,7 +125,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT umessage, WPARAM wparam, LPARAM lparam)
 
 int flag = 0;
 float speed = 0.2;
-void CALLBACK Timer15ms(HWND hWnd, UINT nMsg, UINT nTimerid, DWORD dwTime)
+void CALLBACK Timer15ms(HWND hWnd, UINT nMsg, UINT_PTR nTimerid, DWORD dwTime)
 {
 	//Camera Move
 	float movingSpeed = 0.2;
@@ -288,6 +289,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 	dr->material.specularHardness = 30;
 	dr->material.specularPower = 3;
 	dr->material.opacity = 0.1;
+	dr->verticalLock = false;
 	dragon = dr;
 
 	//amodel.Purge();
@@ -369,7 +371,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 
 	box.LoadFileD3D(workingFolder + "Models\\Cube.obj");
 	engine.LoadModel(box);
-	Instance *k = box.CreateInstance();
+	k = box.CreateInstance();
 	Instance *k2 = box.CreateInstance();
 	k3 = box.CreateInstance();
 	k1 = box.CreateInstance();
@@ -383,6 +385,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 	k->material.diffuseColor[2] = 0;
 	k->material.specularPower = 1;
 	k->material.specularHardness = 5;
+	k->verticalLock = false;
+	k->SpinRoll(45);
+	k->SpinPitch(45);
 
 	k2->SetPosition(2.0, -3.5, 3.5);
 	k2->SetScaling(1.3);
@@ -478,7 +483,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 		engine.Render("depth");
 		engine.camera = cam;
 		engine.UpdateFrameBuffer();
-		engine.Render("voxel_cone_tracing");
+		engine.Render("direct_light");
 
 		PipeLine::Swap();
 	}
