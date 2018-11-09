@@ -7,7 +7,7 @@
   "resource": {
     "vertex_shader": {
       "direct_light": "Shaders\\DirectLightVS.hlsl",
-      "pre_z": "Shaders\\PreZ\\VertexShader.hlsl",
+      //"pre_z": "Shaders\\PreZPS.hlsl",
       "voxelization": "Shaders\\VoxelizationVS.hlsl"
     },
     "geometry_shader": {
@@ -16,7 +16,7 @@
     "pixel_shader": {
       "direct_light": "Shaders\\DirectLightPS.hlsl",
       "depth_visualization": "Shaders\\DepthPS.hlsl",
-      "pre_z": "Shaders\\PreZ\\PixelShader.hlsl",
+      "pre_z": "Shaders\\PreZPS.hlsl",
       "voxelization": "Shaders\\VoxelizationPS.hlsl",
       "cone_tracing": "Shaders\\ConeTracingPS.hlsl"
     },
@@ -104,7 +104,7 @@
     "pre_z": {
       "name": "pre_z",
       "vertex_shader": "direct_light",
-      "pixel_shader": "depth_visualization",
+      "pixel_shader": "pre_z",
       "rasterizer_state": "default",
       "depth_stencil_state": "default",
       "blend_state": "disable",

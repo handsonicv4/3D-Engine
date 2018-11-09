@@ -1,4 +1,6 @@
-#include "VertexShaderBase.hlsl"
+#include "ConstantBuffers.hlsl"
+#include "Input.hlsl"
+#include "Skinning.hlsl"
 
 PSinput main(VSinput input)
 {

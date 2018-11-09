@@ -35,7 +35,7 @@ float3 TraceCone(float3 from, uniform float spread, uniform float initStride, un
 		float diameter = spread * distance;//Diameter in UVW space
 		float mip =  log2(1 + diameter *g_VoxelDimention.x);
 		float mip2 = (mip + 1)*(mip + 1);
-		float4 color = voxelTexture.SampleLevel(samplerStateC, samplePoint, min(5.7, mip));
+		float4 color = voxelTexture.SampleLevel(samplers[1], samplePoint, min(5.7, mip));
 		result.rgb +=  0.04*((1 - result.a)* color.a* color.rgb*pow(2,mip+5));
 		result.a += (1-result.a)*color.a;
 		distance += diameter / (2.0 - spread);
@@ -53,7 +53,7 @@ float3 TraceCone1(float3 from, uniform float spread, uniform float initStride, u
 		float diameter = spread * distance;//Diameter in UVW space
 		float mip = log2(1 + diameter *g_VoxelDimention.x);
 		float mip2 = (mip + 1)*(mip + 1);
-		float4 color = voxelTexture.SampleLevel(samplerStateC, samplePoint, min(5.7, mip));
+		float4 color = voxelTexture.SampleLevel(samplers[1], samplePoint, min(5.7, mip));
 		result.rgb += 0.04*((1 - result.a)* color.a* color.rgb*pow(2, mip + 4));
 		result.a += (1 - result.a)*color.a;
 		distance += diameter / (2.0 - spread);

@@ -1,14 +1,7 @@
-#include "ConstantBuffers.hlsl"
-#include "LightFunc.hlsl"
 #include "Input.hlsl"
 #include "Texture.hlsl"
+#include "ConstantBuffers.hlsl"
 
-struct Light
-{
-	float4 color;
-	float3 direction;
-	float angleCos;
-};
 struct MaterialType
 {
 	float diffusePower;
@@ -36,30 +29,8 @@ struct Pixel
 	float3 normal;
 	float3 position;
 };
+
 StructuredBuffer<MaterialType> instanceMaterial : register(t6);
-Texture2D shadowMap: register(t10);
-StructuredBuffer<Light> Lights: register(t7);
-
-
-
-
-bool IsInShadow(uniform float4 pixelLightPos, uniform float bias)
-{
-	float2 projectTexCoord;
-	bool result = false;
-	projectTexCoord.x = pixelLightPos.x / pixelLightPos.w / 2.0f + 0.5f;
-	projectTexCoord.y = -pixelLightPos.y / pixelLightPos.w / 2.0f + 0.5f;
-	if ((saturate(projectTexCoord.x) == projectTexCoord.x) && (saturate(projectTexCoord.y) == projectTexCoord.y))
-	{
-		float depthValue = shadowMap.Sample(samplers[1], projectTexCoord).r;
-		float pixel_light_z = pixelLightPos.z / pixelLightPos.w - bias;
-		if (pixel_light_z > depthValue)
-		{
-			result = true;
-		}
-	}
-	return result;
-}
 
 Pixel GetPixel(uniform PSinput input)
 {
@@ -121,30 +92,3 @@ Pixel GetInstancePixel(uniform PSinput input)
 	}
 	return p;
 }
-
-float3 Diffuse(uniform Pixel p)
-{
-	//float3 lightDir = (float3)0;
-	float3 result = (float3)0;
-	for (uint i = 0; i < g_NumLights; i++)
-	{
-		//lightDir = normalize(Lights[i].direction - p.position);
-		//result += Diffuse(Lights[i].color, lightDir, p.normal).rgb;
-		result += PointLightDiffuse(Lights[i].color.rgb, Lights[i].direction, p.position, p.normal);
-	}
-	return result*p.diffusePower;
-}
-
-float3 Specular(uniform Pixel p)
-{
-	float3 lightDir = (float3)0;
-	float3 result = (float3)0;
-	float3 cameraDir = normalize(g_CameraPos - p.position);
-	for (uint i = 0; i < g_NumLights; i++)
-	{
-		lightDir = normalize(Lights[i].direction - p.position);
-		result += SpecularBlinnPhong(Lights[i].color, lightDir, cameraDir, p.normal, p.specularHardness).rgb;
-	}
-	return result*p.specularPower;
-}
-

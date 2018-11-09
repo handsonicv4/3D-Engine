@@ -288,7 +288,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 	dr->material.textureEnableFlags = 0x00;
 	dr->material.specularHardness = 30;
 	dr->material.specularPower = 3;
-	dr->material.opacity = 0.1;
+	dr->material.opacity = 0.2;
 	dr->verticalLock = false;
 	dragon = dr;
 
@@ -483,7 +483,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 		engine.Render("depth");
 		engine.camera = cam;
 		engine.UpdateFrameBuffer();
-		engine.Render("direct_light");
+		engine.Render("voxel_cone_tracing");
 
 		PipeLine::Swap();
 	}
