@@ -101,17 +101,16 @@ float3 TraceDiffuseCones(float3 from, uniform float3 normal, uniform float initS
 	return 0.5*result;
 }
 
+float2 PositionToUV(float4 pos)
+{
+	return float2(pos.x/ g_ScreenDimensions.x, pos.y/ g_ScreenDimensions.y);
+}
+
 float4 main(PSinput input) : SV_TARGET
 {
-	Pixel p;
-	if (input.instanceMaterialID > 0)
-	{
-		p = GetInstancePixel(input);
-	}
-	else
-	{
-		p = GetPixel(input);
-	}
+
+	Pixel p = GetPixel(input);
+
 	if (p.opacity < 0.05)
 		discard;
 
@@ -123,17 +122,17 @@ float4 main(PSinput input) : SV_TARGET
 	float3 specular = (float3)0;
 	float3 rs = (float3)0;
 
-	if (!IsInShadow(input.positionLight, 0.0001f))
-	{
+	//if (!IsInShadow(input.positionLight, 0.0001f))
+	//{
 		diffuse = Diffuse(p);
 		specular = Specular(p);
-	}
+	//}
 	diffuse += p.diffusePower*TraceDiffuseCones(pos, p.normal, voxelStride*2, 1.4);
 
 	if (p.specularPower > 1)
 	{
 		float3 inSpecDir = reflect(-cameraDir, p.normal);
-		specular += p.specularPower*TraceCone(pos + input.normal / g_VoxelDimention * 3, 0.2, voxelStride * 3, 1.2, inSpecDir);
+		specular += p.specularPower*TraceCone(pos + input.normal / g_VoxelDimention * 3, 0.19, voxelStride * 2, 1.2, inSpecDir);
 	}
 
 	if (p.refractiveIndex > 1.1 && p.opacity<1)
@@ -141,7 +140,9 @@ float4 main(PSinput input) : SV_TARGET
 		float3 refractDir = refract(-cameraDir, p.normal, 0.7);
 		rs = 6 * TraceCone1(pos - input.normal / g_VoxelDimention *2, 0.2, voxelStride*4, 1.4, refractDir);
 	}
-	float4 result = float4(p.opacity*diffuse*p.diffuseColor+specular*p.specularColor+ (1-p.opacity)*rs + p.emissivity*p.emissiveColor, p.opacity);
+	float shade = shadowMap.Sample(samplers[1], PositionToUV(input.position)).r;
+	
+	float4 result = float4(shade*(p.opacity*diffuse*p.diffuseColor+specular*p.specularColor)+ (1-p.opacity)*rs + p.emissivity*p.emissiveColor, p.opacity);
 
 	return   result;
 }

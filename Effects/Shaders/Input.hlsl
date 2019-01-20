@@ -1,4 +1,3 @@
-
 struct VSinput
 {
 	float3 position : POSITION;
@@ -21,5 +20,5 @@ struct PSinput
 	float3 tangent : TANGENT;
 	float3 bitangent : BINORMAL;
 	float2 tex : TEXCOORD0;
-	uint instanceMaterialID : TEXCOORD1;
+	uint instanceID : TEXCOORD1;
 };

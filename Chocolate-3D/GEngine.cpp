@@ -1,21 +1,26 @@
 #include"GEngine.h"
 #include <fstream>
 #include <sstream>
+#include <math.h>
 #include "json11/json11.hpp"
 #include "Pipeline/DescFileLoader.h"
 using namespace std;
 using namespace json11;
 using namespace FileLoader;
 
+float Saturate(float in)
+{
+	if (in < 0) return 0;
+	if (in > 1) return 1;
+	return in;
+}
+
 GEngine::GEngine()
 {
 	effect = NULL;
 	numBonePerVertex = 4;
 	numBonePerBatch = 1024;
-	animationMatrix.reserve(numBonePerBatch);
-	instanceMaterialData.reserve(numBonePerBatch);
 	maxInstances = 256;
-	instanceData.reserve(maxInstances);
 
 	vsync_enabled = false;
 	fullscreen = false;
@@ -38,7 +43,6 @@ GEngine::GEngine()
 	voxelSize[1] = 10.0 / voxelDimention[1];
 	voxelSize[2] = 10.0 / voxelDimention[2];
 
-	objData.alphaFactor = 0.1;
 }
 
 GEngine::~GEngine()
@@ -61,7 +65,6 @@ bool GEngine::Init(HWND window, bool fullscreen)
 	if (!result)
 		return false;
 
-
 	//int def = PipeLine::SamplerState().CreateFromFile("");
 	//PipeLine::SamplerState().Apply(def, 0xffff, Slot_Sampler_Default);
 	//int clamp = PipeLine::SamplerState().CreateFromFile("clamp");
@@ -82,15 +85,7 @@ bool GEngine::InitBuffers()
 	descCB.name = "FrameBuffer";
 	descCB.size[0] = sizeof(FrameBufferData);
 	frameBufferID = PipeLine::Resources().Create(descCB);
-
 	if (frameBufferID == -1)
-		return false;
-
-	//Constant Buffer PerObject
-	descCB.name = "ObjBuffer";
-	descCB.size[0] = sizeof(ObjBufferData);
-	objBufferID = PipeLine::Resources().Create(descCB);
-	if (objBufferID == -1)
 		return false;
 
 	ResourceDesc descSRV;
@@ -122,28 +117,16 @@ bool GEngine::InitBuffers()
 	if (lightBufferID == -1)
 		return false;
 
-	descSRV.name = "Material Buffer";
-	descSRV.size[0] = maxInstances * sizeof(InstanceMaterial);
-	descSRV.elementStride = sizeof(InstanceMaterial);
-	instanceMaterialID = PipeLine::Resources().Create(descSRV);
-	if (instanceMaterialID == -1)
-		return false;
-
 	PipeLine::Resources().SetBinding(Stage_Vertex_Shader, Bind_Constant_Buffer, Slot_CBuffer_Frame, frameBufferID);
 	PipeLine::Resources().SetBinding(Stage_Pixel_Shader, Bind_Constant_Buffer, Slot_CBuffer_Frame, frameBufferID);
 	PipeLine::Resources().SetBinding(Stage_Compute_Shader, Bind_Constant_Buffer, Slot_CBuffer_Frame, frameBufferID);
 	PipeLine::Resources().SetBinding(Stage_Geometry_Shader, Bind_Constant_Buffer, Slot_CBuffer_Frame, frameBufferID);
 
-	PipeLine::Resources().SetBinding(Stage_Vertex_Shader, Bind_Constant_Buffer, Slot_CBuffer_Object, objBufferID);
-	PipeLine::Resources().SetBinding(Stage_Pixel_Shader, Bind_Constant_Buffer, Slot_CBuffer_Object, objBufferID);
-	PipeLine::Resources().SetBinding(Stage_Compute_Shader, Bind_Constant_Buffer, Slot_CBuffer_Object, objBufferID);
-	PipeLine::Resources().SetBinding(Stage_Geometry_Shader, Bind_Constant_Buffer, Slot_CBuffer_Object, objBufferID);
-
 	PipeLine::Resources().SetBinding(Stage_Vertex_Shader, Bind_Shader_Resource, Slot_Texture_AnimMatrix, animationMatrixBufferID);
 	PipeLine::Resources().SetBinding(Stage_Vertex_Shader, Bind_Shader_Resource, Slot_Texture_Instance, instanceBufferID);
+	PipeLine::Resources().SetBinding(Stage_Pixel_Shader, Bind_Shader_Resource, Slot_Texture_Instance, instanceBufferID);
 	PipeLine::Resources().SetBinding(Stage_Pixel_Shader, Bind_Shader_Resource, Slot_Texture_Light, lightBufferID);
-	PipeLine::Resources().SetBinding(Stage_Pixel_Shader, Bind_Shader_Resource, Slot_Texture_Instance, instanceMaterialID);
-
+	PipeLine::Resources().SetBinding(Stage_Vertex_Shader, Bind_Shader_Resource, Slot_Texture_Light, lightBufferID);
 
 	return true;
 }
@@ -180,77 +163,105 @@ void GEngine::UpdateLight(vector<Light> lights)
 	lightList = lights;
 }
 
-void GEngine::UpdateInstanceBuffer(Model *pModel, unsigned int meshID)
+void GEngine::UpdateBuckets()
 {
-	Mesh &mesh = pModel->meshList[meshID];
-
-	unsigned int stride = mesh.boneList.size();
-	instanceMaterialData.clear();
-	animationMatrix.clear();
-	instanceData.clear();
-	auto it = pModel->instances.begin();
-	
-	unsigned int index = 0;
-	unsigned int mindex = 1;
-	InstanceData idata;
-	//Per instance loop
-	while (it != pModel->instances.end())
+	RenderPair key(NULL, NULL);
+	instanceBuckets.clear();
+	bindMatrixBuckets.clear();
+	vector<ModelInstance*> destroied;
+	for (ModelInstance* p : instances)
 	{
-		Instance &instance = *it->second;
-		if (!instance.visable)
+		if (!p->visible) continue;
+		if (p->IsDestroied())
 		{
-			it++;
+			destroied.push_back(p);
 			continue;
 		}
-		//Write Instance data
-		memcpy(&idata.color, &instance.color, sizeof(float[4]));
-		memcpy(&idata.world, &instance.transformMatrix, sizeof(float[16]));
-		aiMatrix4x4 wvp = camera.GetProjectionMatrix()*camera.GetViewMatrix()*instance.transformMatrix;
-		memcpy(&idata.wVP, &wvp, sizeof(float[16]));
-		idata.bindMatrixOffset = index*stride;
-		
-		
-
-		//Write animation data
-		if (pModel->hasAnimation)
+		for (GraphicInstance &unit : p->components)
 		{
-			//accumulate bind matrix
-			vector<aiMatrix4x4> matrixArray = instance.GetBindMatrix(meshID);
-			//vector<aiMatrix4x4> identity(matrixArray.size());//Debug
+			key.pMeshResource = unit.meshInstance.pResource;
+			key.pMaterialResource = unit.materialInstance.pResource;
+			if (!instanceBuckets.count(key)) instanceBuckets[key] = vector<InstanceData>();
+			if (!bindMatrixBuckets.count(key)) bindMatrixBuckets[key] = vector<aiMatrix4x4>();
 
-			animationMatrix.insert(animationMatrix.end(), matrixArray.begin(), matrixArray.end());
-		}
+			//Update InstanceData
+			InstanceData iData;
+			ZeroMemory(&iData, sizeof(iData));
 
-		//Apply instance material
-		if (instance.useInstanceMaterial)
-		{
-			instanceMaterialData.push_back(instance.material);
-			idata.instanceMaterialID = mindex;
-			mindex++;
+			aiMatrix4x4 wvp = camera.GetProjectionMatrix()*camera.GetViewMatrix()*p->transform.transformMatrix;
+
+			memcpy(iData.worldMatrix, &p->transform.transformMatrix, sizeof(float[16]));
+			memcpy(&iData.wVP, &wvp, sizeof(float[16]));
+			memcpy(&iData.diffuseColor, &unit.materialInstance.diffuseColor, sizeof(float[3]));
+			memcpy(&iData.specularColor, &unit.materialInstance.specularColor, sizeof(float[3]));
+			memcpy(&iData.emissiveColor, &unit.materialInstance.emissiveColor, sizeof(float[3]));
+			memcpy(&iData.diffuseTextureOffset, &unit.materialInstance.diffuseTextureOffset, sizeof(float[2]));
+			memcpy(&iData.specularTextureOffset, &unit.materialInstance.specularTextureOffset, sizeof(float[2]));
+			memcpy(&iData.emissiveTextureOffset, &unit.materialInstance.emissiveTextureOffset, sizeof(float[2]));
+			memcpy(&iData.normalTextureOffset, &unit.materialInstance.normalTextureOffset, sizeof(float[2]));
+			iData.bindMatrixOffset = bindMatrixBuckets[key].size();
+			iData.diffusePower = max(unit.materialInstance.diffusePower, 0);
+			iData.specularPower = max(unit.materialInstance.specularPower, 0);
+			iData.emissivePower = max(unit.materialInstance.emissivePower, 0);
+			iData.alphaFactor = Saturate(unit.materialInstance.opacity);
+			iData.diffuseBlendFactor = unit.materialInstance.pResource->diffuseMap == -1 ? 1 : Saturate(unit.materialInstance.diffuseBlendFactor);
+			iData.specularBlendFactor = unit.materialInstance.pResource->specularMap == -1 ? 1 : Saturate(unit.materialInstance.specularBlendFactor);
+			iData.emissiveBlendFactor = unit.materialInstance.pResource->ambientMap == -1 ? 1 : Saturate(unit.materialInstance.emissiveBlendFactor);
+			iData.refractiveIndex = unit.materialInstance.refractiveIndex;
+			iData.specularHardness = max(unit.materialInstance.specularHardness, 0);
+			iData.flags |= (p->pack && p->pack->nodeList.size() && unit.meshInstance.pResource->boneIndexID != -1); // Animation flag
+			iData.flags |= (iData.diffuseBlendFactor < 1) << 1;	//Diffuse texture flag
+			iData.flags |= (iData.specularBlendFactor < 1) << 2;	 //Specular texture flag
+			iData.flags |= (unit.materialInstance.pResource->normalMap != -1 && unit.materialInstance.normalTextureEnable) << 3; //Normal map flag
+			iData.flags |= (iData.emissiveBlendFactor < 1) << 4; //Emissive texture flag
+
+			instanceBuckets[key].push_back(move(iData));
+
+			//Update bind matrix
+			if(unit.meshInstance.bindMatrix.size() > 0)
+				bindMatrixBuckets[key].insert(bindMatrixBuckets[key].end(), unit.meshInstance.bindMatrix.begin(), unit.meshInstance.bindMatrix.end());
 		}
-		else
-		{
-			idata.instanceMaterialID = 0;
-		}
-		instanceData.push_back(idata);
-		index++;
-		it++;
 	}
-	//Update instance data
-	PipeLine::Resources().UpdateResourceData(instanceBufferID, &instanceData[0], sizeof(InstanceData)*instanceData.size());
 
-	//Update animation data
-	if (pModel->hasAnimation)
+	for (ModelInstance* p : destroied)
 	{
-		PipeLine::Resources().UpdateResourceData(animationMatrixBufferID, &animationMatrix[0], sizeof(float[16])*animationMatrix.size());
+		instances.erase(p);
+		delete p;
 	}
+}
 
-	//Update instance material data
-	if (instanceMaterialData.size() > 0)
+void GEngine::ApplyAnimation()
+{
+	for (ModelInstance* p : instances)
 	{
-		PipeLine::Resources().UpdateResourceData(instanceMaterialID, &instanceMaterialData[0], sizeof(InstanceMaterial)*instanceMaterialData.size());
+		if (!p->IsDestroied() && p->visible)
+		{
+			p->ApplyAnimation();
+		}
 	}
+}
 
+void GEngine::Instancing(const RenderPair & rpair, const vector<InstanceData>& instanceData, const vector<aiMatrix4x4>& bindMatrix)
+{
+	if (rpair.pMeshResource == NULL || instanceData.size() == 0)
+		return;
+
+	//Bind mesh to pipeLine
+	rpair.Render();
+
+	//Update instance buffer and bindMatrix buffer
+	if(instanceData.size() > 0)
+		PipeLine::Resources().UpdateResourceData(instanceBufferID, &instanceData[0], sizeof(InstanceData)*instanceData.size());
+	if(bindMatrix.size() > 0)
+		PipeLine::Resources().UpdateResourceData(animationMatrixBufferID, &bindMatrix[0], sizeof(float[16])*bindMatrix.size());
+	//Draw
+	PipeLine::Draw(rpair.pMeshResource->indexCount, instanceData.size());
+}
+
+void GEngine::LoadPostMesh(string file)
+{
+	auto p = LoadAsset(file);
+	postMesh = p->meshs[0];
 }
 
 bool GEngine::UpdateFrameBuffer()
@@ -272,13 +283,9 @@ bool GEngine::UpdateFrameBuffer()
 	frameData.numLights = lightList.size();
 	frameData.screenDimensions[0] = resolutionX;
 	frameData.screenDimensions[1] = resolutionY;
+
 	//maxNumLightsPerTile;
 	return PipeLine::Resources().UpdateResourceData(frameBufferID, &frameData, sizeof(frameData));
-}
-
-bool GEngine::UpdateObjBuffer()
-{
-	return PipeLine::Resources().UpdateResourceData(objBufferID, &objData, sizeof(objData));
 }
 
 bool GEngine::UpdateLightBuffer()
@@ -286,84 +293,21 @@ bool GEngine::UpdateLightBuffer()
 	return PipeLine::Resources().UpdateResourceData(lightBufferID, &lightList[0], sizeof(Light)*lightList.size());
 }
 
-void GEngine::RenderMesh(MeshResource * pMesh)
+ModelInstance * GEngine::CreateInstance(const ModelInstance &bluePrint)
 {
-	PipeLine::Resources().SetBinding(Stage_Input_Assembler, Bind_Vertex_Buffer, Slot_Input_Position, pMesh->positionID);
-	PipeLine::Resources().SetBinding(Stage_Input_Assembler, Bind_Vertex_Buffer, Slot_Input_Normal, pMesh->normalID);
-	PipeLine::Resources().SetBinding(Stage_Input_Assembler, Bind_Vertex_Buffer, Slot_Input_Tangent, pMesh->tangentID);
-	PipeLine::Resources().SetBinding(Stage_Input_Assembler, Bind_Vertex_Buffer, Slot_Input_Binormal, pMesh->bitangentID);
-	PipeLine::Resources().SetBinding(Stage_Input_Assembler, Bind_Vertex_Buffer, Slot_Input_TexCoord, pMesh->texCoordID);
-	PipeLine::Resources().SetBinding(Stage_Input_Assembler, Bind_Vertex_Buffer, Slot_Input_BlendIndices, pMesh->boneIndexID);
-	PipeLine::Resources().SetBinding(Stage_Input_Assembler, Bind_Vertex_Buffer, Slot_Input_BlendWeight, pMesh->boneWeightID);
-	PipeLine::Resources().SetBinding(Stage_Input_Assembler, Bind_Index_Buffer, 0, pMesh->indiceID);
+	ModelInstance * instance = new ModelInstance(bluePrint);
+	instances.insert(instance);
+	return instance;
 }
 
-void GEngine::RenderMaterial(MaterialResource * pMaterial)
+
+AssetPack * GEngine::LoadAsset(string file)
 {
-	PipeLine::Resources().SetBinding(Stage_Pixel_Shader, Bind_Shader_Resource, Slot_Texture_Diffuse, pMaterial->diffuseMap);
-	PipeLine::Resources().SetBinding(Stage_Pixel_Shader, Bind_Shader_Resource, Slot_Texture_Normal, pMaterial->normalMap);
-	PipeLine::Resources().SetBinding(Stage_Pixel_Shader, Bind_Shader_Resource, Slot_Texture_Ambient, pMaterial->ambientMap);
-	PipeLine::Resources().SetBinding(Stage_Pixel_Shader, Bind_Shader_Resource, Slot_Texture_Specular, pMaterial->specularMap);
-	objData.alphaFactor = pMaterial->opacity;
-	objData.diffusePower = pMaterial->diffusePower;
-	objData.emissivity = pMaterial->emissivity;
-	objData.refractiveIndex = pMaterial->refractiveIndex;
-	objData.specularPower = pMaterial->specularPower;
-	objData.specularHardness = pMaterial->specularHardness;
-	memcpy(objData.diffuseColor, pMaterial->diffuseColor, sizeof(float[3]));
-	memcpy(objData.specularColor, pMaterial->specularColor, sizeof(float[3]));
-	memcpy(objData.ambientColor, pMaterial->ambientColor, sizeof(float[3]));
+	AssetPack* assetPack = new AssetPack();
+	Model model;
+	model.LoadFileD3D(file);
 
-}
-
-void GEngine::RenderModel(ModelResource * pModel)
-{
-	UINT instanceCount = pModel->model->UpdateVisableInstances();
-	if (!instanceCount)
-	{
-		return;
-	}
-	objData.flags = 0;
-	objData.flags |= pModel->hasAnimation ? Apply_Animation : 0x00;
-
-	for (int i = 0; i < pModel->meshes.size(); i++)
-	{
-		MeshResource &mesh = pModel->meshes[i];
-		RenderMesh(&mesh);
-
-		if (mesh.materialID >= 0)
-		{
-			MaterialResource &material = pModel->materials[mesh.materialID];
-			RenderMaterial(&material);
-			objData.flags |= material.ambientMap == -1 ? 0 : Apply_Texture_Ambient;
-			objData.flags |= material.diffuseMap == -1 ? 0 : Apply_Texture_Diffuse;
-			objData.flags |= material.specularMap == -1 ? 0 : Apply_Texture_Specular;
-			objData.flags |= (material.normalMap == -1 || mesh.tangentID == -1 || mesh.bitangentID == -1) ? 0 : Apply_Texture_Normal;
-
-		}
-
-		
-
-		UpdateObjBuffer();
-		UpdateInstanceBuffer(pModel->model, i);
-
-
-		PipeLine::Draw(pModel->meshes[i].indexCount, instanceCount);
-	}
-}
-
-int GEngine::LoadModel(Model &model)
-{
-	//Generate ID
-	int modelID;
-	for (modelID = 1; modelID < INT_MAX; modelID++)
-	{
-		if (!modelList.count(modelID))
-			break;
-	}
-	if (modelID == INT_MAX)
-		return -1;
-	ResourceDesc descVB,descIB,descTX;
+	ResourceDesc descVB, descIB, descTX;
 	descVB.name = "Vertex Buffer";
 	descVB.type = Resource_Buffer;
 	descVB.bindFlag = Bind_Vertex_Buffer;
@@ -382,15 +326,17 @@ int GEngine::LoadModel(Model &model)
 	descTX.format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	descTX.mipLevel = 0;
 
-	ModelResource &rmodel = modelList[modelID];
-	rmodel.meshes.resize(model.meshList.size());
-	rmodel.hasAnimation = model.hasAnimation;
-	rmodel.animationCount = model.animationList.size();
-	rmodel.model = &model;
+	assetPack->meshs.resize(model.meshList.size());
+	assetPack->animationList = model.animationList;
+	assetPack->nodeList = model.nodeList;
+	
 	for (int i = 0; i < model.meshList.size(); i++)
 	{
-		MeshResource &dstMesh = rmodel.meshes[i];
+		MeshResource &dstMesh = assetPack->meshs[i];
 		Mesh &srcMesh = model.meshList[i];
+
+		dstMesh.boneList = srcMesh.boneList;
+		dstMesh.nodeID = srcMesh.nodeID;
 
 		unsigned int dataSize;
 		void* dataPtr;
@@ -410,7 +356,7 @@ int GEngine::LoadModel(Model &model)
 			descVB.elementStride = sizeof(float[3]);
 			dstMesh.normalID = PipeLine::Resources().Create(descVB, dataPtr, dataSize);
 		}
-		if (!srcMesh.vertexTangent.empty()&& !srcMesh.vertexBitangent.empty())
+		if (!srcMesh.vertexTangent.empty() && !srcMesh.vertexBitangent.empty())
 		{
 			dataSize = srcMesh.vertexTangent.size() * sizeof(float[3]);
 			dataPtr = &srcMesh.vertexTangent[0];
@@ -432,7 +378,7 @@ int GEngine::LoadModel(Model &model)
 			descVB.elementStride = sizeof(float[2]);
 			dstMesh.texCoordID = PipeLine::Resources().Create(descVB, dataPtr, dataSize);
 		}
-		if (rmodel.hasAnimation)
+		if (model.hasAnimation)
 		{
 			dataSize = srcMesh.vertexBindID.size() * sizeof(UINT);
 			dataPtr = &srcMesh.vertexBindID[0];
@@ -454,25 +400,13 @@ int GEngine::LoadModel(Model &model)
 			dstMesh.indiceID = PipeLine::Resources().Create(descIB, dataPtr, dataSize);
 			dstMesh.indexCount = srcMesh.indices.size();
 		}
-
-		dstMesh.materialID = srcMesh.materialID;
 	}
-
-	rmodel.materials.resize(model.materialList.size());
+	
+	assetPack->materials.resize(model.materialList.size());
 	for (int i = 0; i < model.materialList.size(); i++)
 	{
-		MaterialResource &dstMaterial = rmodel.materials[i];
+		MaterialResource &dstMaterial = assetPack->materials[i];
 		Material &srcMaterial = model.materialList[i];
-
-		dstMaterial.opacity = srcMaterial.opacity;
-		dstMaterial.diffusePower = srcMaterial.diffusePower;
-		dstMaterial.emissivity = srcMaterial.emissivity;
-		dstMaterial.refractiveIndex = srcMaterial.refractiveIndex;
-		dstMaterial.specularPower = srcMaterial.specularPower;
-		dstMaterial.specularHardness = srcMaterial.specularHardness;
-		memcpy(dstMaterial.diffuseColor, srcMaterial.diffuse, sizeof(float[3]));
-		memcpy(dstMaterial.specularColor, srcMaterial.specular, sizeof(float[3]));
-		memcpy(dstMaterial.ambientColor, srcMaterial.ambient, sizeof(float[3]));
 
 		if (srcMaterial.hasDiffuseMap)
 		{
@@ -481,171 +415,118 @@ int GEngine::LoadModel(Model &model)
 			dstMaterial.diffuseMap = PipeLine::Resources().Create(descTX, srcMaterial.diffuseMap.GetImageDataPtr());
 		}
 
+		if (srcMaterial.hasSpecularMap)
+		{
+			descTX.size[0] = srcMaterial.specularMap.width;
+			descTX.size[1] = srcMaterial.specularMap.height;
+			dstMaterial.specularMap = PipeLine::Resources().Create(descTX, srcMaterial.specularMap.GetImageDataPtr());
+		}
+
 		if (srcMaterial.hasNormalMap)
 		{
 			descTX.size[0] = srcMaterial.normalMap.width;
 			descTX.size[1] = srcMaterial.normalMap.height;
 			dstMaterial.normalMap = PipeLine::Resources().Create(descTX, srcMaterial.normalMap.GetImageDataPtr());
 		}
+
+		if (srcMaterial.hasAmbientMap)
+		{
+			descTX.size[0] = srcMaterial.ambientMap.width;
+			descTX.size[1] = srcMaterial.ambientMap.height;
+			dstMaterial.ambientMap = PipeLine::Resources().Create(descTX, srcMaterial.ambientMap.GetImageDataPtr());
+		}
 	}
-	return modelID;
+	vector<GraphicInstance> &components = assetPack->defaultInstance.components;
+	components.resize(model.meshList.size());
+	for (int i = 0; i < model.meshList.size(); i++)
+	{
+		Mesh &srcMesh = model.meshList[i];
+		Material &srcMaterial = model.materialList[srcMesh.materialID];
+		components[i].meshInstance = MeshInstance(&assetPack->meshs[i]);
+		components[i].materialInstance.pResource = &assetPack->materials[srcMesh.materialID];
+		components[i].materialInstance.opacity = srcMaterial.opacity;
+		components[i].materialInstance.diffusePower = srcMaterial.diffusePower;
+
+		components[i].materialInstance.emissivePower = srcMaterial.emissivity;
+		components[i].materialInstance.refractiveIndex = srcMaterial.refractiveIndex;
+		components[i].materialInstance.specularPower = srcMaterial.specularPower;
+		components[i].materialInstance.specularHardness = srcMaterial.specularHardness;
+		memcpy(components[i].materialInstance.diffuseColor, srcMaterial.diffuse, sizeof(float[3]));
+		memcpy(components[i].materialInstance.specularColor, srcMaterial.specular, sizeof(float[3]));
+		memcpy(components[i].materialInstance.emissiveColor, srcMaterial.ambient, sizeof(float[3]));
+	}
+
+	return assetPack;
 }
 
 void GEngine::UnloadModel(UINT modelID)
 {
-	ModelResource &model = modelList[modelID];
-
-	//Release Mesh data from graphics memory
-	for (int i = 0; i < model.meshes.size(); i++)
-	{
-		MeshResource &mesh = model.meshes[i];
-		if (mesh.positionID != -1)
-			PipeLine::Resources().Delete(mesh.positionID);
-		if (mesh.normalID != -1)
-			PipeLine::Resources().Delete(mesh.normalID);
-		if (mesh.colorID != -1)
-			PipeLine::Resources().Delete(mesh.colorID);
-		if (mesh.texCoordID != -1)
-			PipeLine::Resources().Delete(mesh.texCoordID);
-		if (mesh.indiceID != -1)
-			PipeLine::Resources().Delete(mesh.indiceID);
-		if (mesh.tangentID != -1)
-			PipeLine::Resources().Delete(mesh.tangentID);
-		if (mesh.bitangentID != -1)
-			PipeLine::Resources().Delete(mesh.bitangentID);
-		if (mesh.boneIndexID != -1)
-			PipeLine::Resources().Delete(mesh.boneIndexID);
-		if (mesh.boneWeightID != -1)
-			PipeLine::Resources().Delete(mesh.boneWeightID);
-	}
-
-	//Release Material data from graphics memory
-	for (int i = 0; i < model.materials.size(); i++)
-	{
-		MaterialResource &material = model.materials[i];
-		if (material.ambientMap != -1)
-			PipeLine::Resources().Delete(material.ambientMap);
-		if (material.diffuseMap != -1)
-			PipeLine::Resources().Delete(material.diffuseMap);
-		if (material.normalMap != -1)
-			PipeLine::Resources().Delete(material.normalMap);
-		if (material.specularMap != -1)
-			PipeLine::Resources().Delete(material.specularMap);
-	}
-
-	//Delete model from list
-	modelList.erase(modelID);
 
 }
 
-void GEngine::Render(const Pass &pass)
+void GEngine::Render(const PassOperation & cfg)
 {
 	//Render
-	for (auto& op : pass.operations) 
-	{
-		if (op.type == Pass_Operation_Draw) 
-		{
-			PipeLine::DepthStencilState().Apply(pass.depthStencilStateID, 1);
-			float bf[] = { 1,1,1,1 };
-			PipeLine::BlendState().Apply(pass.blendStateID, bf, 0xffffffff);
-			PipeLine::RasterizorState().Apply(pass.rasterizorStateID);
-			//UpdateViewPort();
-			PipeLine::ViewPort().Apply(pass.viewPortID);
-			//Activate Shaders
-			PipeLine::VertexShader().Activate(pass.vertexShaderID);
-			PipeLine::PixelShader().Activate(pass.pixelShaderID);
-			PipeLine::GeometryShader().Activate(pass.geometryShaderID);
+	//const Pass & pass = effect->passes[cfg.passID];
+	//for (auto& op : pass.operations)
+	//{
+	//	if (op.type == Pass_Operation_Draw)
+	//	{
+	//		pass.Bind(cfg);
+	//		if (pass.type == Pass_Default)
+	//		{
+	//			for (auto& e : instanceBuckets)
+	//			{
+	//				Instancing(e.first, e.second, bindMatrixBuckets[e.first]);
+	//			}
+	//		}
+	//		else if (pass.type == Pass_PostProcessing)
+	//		{
+	//			postMesh.Render();
+	//			PipeLine::Draw(6,1);
+	//		}
+	//		pass.Unbind();
+	//	}
+	//	else if (op.type == Pass_Operation_Reset)
+	//	{
+	//		PipeLine::Resources().Reset(op.targetID, op.value);
+	//	}
+	//	else if (op.type == Pass_Operation_Generate_Mip)
+	//	{
+	//		PipeLine::Resources().GenerateMipMap(op.targetID);
+	//	}
+	//}
 
-			//Set primative Topology
-			PipeLine::SetPrimitiveType(pass.topology);
-
-			//Set resource binding
-			for (int i = 0; i < pass.resourceBinding.size(); i++)
-			{
-				const BindingRule &bind = pass.resourceBinding[i];
-				PipeLine::Resources().SetBinding(bind.stages, bind.flag, bind.slot, bind.resourceID);
-			}
-
-			//Set sampler binding
-			for (auto& binding : pass.samplerBinding)
-			{
-				PipeLine::SamplerState().Apply(binding.resourceID, binding.stages, binding.slot);
-			}
-			//Render
-			for (auto& e : modelList) 
-			{
-				RenderModel(&(e.second));
-			}
-			//Unbind
-			for (int i = 0; i < pass.resourceBinding.size(); i++)
-			{
-				const BindingRule &bind = pass.resourceBinding[i];
-				PipeLine::Resources().SetBinding(bind.stages, bind.flag, bind.slot, -1);
-			}
-		}
-		else if (op.type == Pass_Operation_Reset)
-		{
-			PipeLine::Resources().Reset(op.targetID, op.value);
-		}
-		else if (op.type == Pass_Operation_Generate_Mip)
-		{
-			PipeLine::Resources().GenerateMipMap(op.targetID);
-		}
-	}
 }
 
 void GEngine::Render(const string &renderer)
 {
-	vector<int> &passList = effect->renderers[renderer];
-	for (int id : passList)
+	ApplyAnimation();
+	UpdateBuckets();
+	auto &operations = effect->renderer[renderer];
+	for (auto& op : operations)
 	{
-		Render(effect->passes[id]);
+		op->Execute();
+		if (op->type == Operation_Pass)
+		{
+			for (auto& e : instanceBuckets)
+			{
+				Instancing(e.first, e.second, bindMatrixBuckets[e.first]);
+			}
+		}
+		else if (op->type == Operation_Post_Proc)
+		{
+			postMesh.Render();
+			PipeLine::Draw(6, 1);
+		}
 	}
-}
-
-int GEngine::CreateSurfaceRec(float width, float hieght, float leftTopX, float leftTopY)
-{
-	/*
-	Group panelGroup;
-	Model panel;
-	Material mt;
-	//Four Corner clockwise
-
-	panel.vertexPosition = { Position(0, 0, 0), Position(width, 0, 0), Position(width, -hieght, 0), Position(0, -hieght, 0) };
-
-	panel.vertexTexCoord = { TexCoord(0, 0),TexCoord(1, 0),TexCoord(1, 1),TexCoord(0, 1) };
-
-	panelGroup.indices = { 0,1,3,1,2,3 };
-
-	panelGroup.materialName = "default";
-
-	panel.materialTable["default"] = 0;
-
-	panel.groups = { panelGroup };
-	panel.materials = { mt };
-	panel.passID = pass2D;
-
-	int id = LoadModel(panel);
-	if (id == -1)
-		return -1;
-
-	GModel* pGModel = GetModleByID(id);
-
-	pGModel->positionX = leftTopX;
-	pGModel->positionY = leftTopY;
-	pGModel->positionZ = 0.0f;
-	pGModel->UpdateWordMatrix();
-	pGModel->gMaterial[0].opacity = 1;
-	CreateTextureD2D(devicePtr, deviceContextPtr, resolutionX*width / 2, resolutionY*hieght / 2, 32, NULL, &pGModel->gMaterial[0].diffuseMap, &pGModel->gMaterial[0].diffuseMapView);
-*/
-	return 0;
 }
 
 bool GEngine::LoadEffect(const string & filePath)
 {
 	CloseEffect();
 	effect = Effect::Create(filePath);
-	PipeLine::InputLayout().Activate(effect->inputLayout);
+	effect->Apply();
 	return true;
 }
 

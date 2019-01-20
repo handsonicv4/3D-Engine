@@ -291,7 +291,7 @@ bool Resource::ResetData(const UINT value[4])
 	return true;
 }
 
-bool Resource::UpdateData(void * pData, size_t size) 
+bool Resource::UpdateData(const void * pData, size_t size)
 {
 	UINT rowPitch = 0;
 	if(desc.type==Resource_Texture2D)
@@ -811,7 +811,7 @@ int ResourceManager::GetBackBuffer()
 	return backBufferID;
 }
 
-bool ResourceManager::UpdateResourceData(UINT resourceID, void * pData, UINT size)
+bool ResourceManager::UpdateResourceData(UINT resourceID, const void * pData, UINT size)
 {
 	if (!Exist(resourceID)) return false;
 	return pool[resourceID]->UpdateData(pData, size);

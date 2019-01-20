@@ -20,15 +20,8 @@ float4 main(PSinput input) : SV_TARGET
 		discard;
 	}
 
-	Pixel p;
-	if (input.instanceMaterialID > 0)
-	{
-		p = GetInstancePixel(input);
-	}
-	else
-	{
-		p = GetPixel(input);
-	}
+	Pixel p = GetPixel(input);
+
 	if (p.opacity < 0.05)
 		discard;
 

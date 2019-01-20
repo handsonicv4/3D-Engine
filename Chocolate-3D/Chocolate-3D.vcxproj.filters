@@ -128,5 +128,8 @@
     <ClCompile Include="pipeline\Pipeline.cpp">
       <Filter>源文件\pipeline</Filter>
     </ClCompile>
+    <ClCompile Include="ResourcePack.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

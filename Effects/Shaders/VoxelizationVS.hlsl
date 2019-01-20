@@ -2,6 +2,17 @@
 #include "Input.hlsl"
 #include "Skinning.hlsl"
 
+struct Light
+{
+	float4 color;
+	float3 direction;
+	float angleCos;
+	matrix lightVP;
+};
+
+//bind
+StructuredBuffer<Light> Lights: register(t7);
+
 PSinput main(VSinput input)
 {
 	PSinput output;
@@ -12,7 +23,8 @@ PSinput main(VSinput input)
 	output.tangent = input.tangent;
 	output.bitangent = input.bitangent;
 	//Skinning:
-	if (g_Flags & 0x01)
+	uint flags = instanceData[input.instanceID].flags;
+	if (flags & 0x01)
 	{
 		uint bindOffset = instanceData[input.instanceID].bindMatrixOffset;
 		input.boneID += bindOffset;
@@ -20,7 +32,7 @@ PSinput main(VSinput input)
 		output.position = BoneTransformPos(position, input.boneWeight, input.boneID);
 		output.normal = BoneTransformNorm(input.normal, input.boneWeight, input.boneID);
 
-		if (g_Flags & 0x04)
+		if (flags & 0x04)
 		{
 			output.tangent = BoneTransformNorm(input.tangent, input.boneWeight, input.boneID);
 			output.bitangent = BoneTransformNorm(input.bitangent, input.boneWeight, input.boneID);
@@ -35,8 +47,8 @@ PSinput main(VSinput input)
 	output.tangent= normalize(mul(output.tangent, (float3x3)instanceData[input.instanceID].world));
 	output.bitangent = normalize(mul(output.bitangent, (float3x3)instanceData[input.instanceID].world));
 	output.tex = input.tex;
-	output.instanceMaterialID = instanceData[input.instanceID].instanceMaterialID;
+	output.instanceID = input.instanceID;
 
-	output.positionLight = mul(output.positionWorld, g_LightVP);
+	output.positionLight = mul(output.positionWorld, Lights[0].lightVP);
     return output;
 }

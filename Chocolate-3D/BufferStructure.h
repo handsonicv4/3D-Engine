@@ -23,34 +23,43 @@ struct FrameBufferData
 	float pad2;
 
 	float	lightVP[16];
-};
 
-struct ObjBufferData
-{
-	UINT flags;
-	float alphaFactor;
-	float diffusePower;
-	float specularHardness;
-
-	float diffuseColor[3];
-	float specularPower;
-
-	float specularColor[3];
-	float emissivity;
-
-	float ambientColor[3];
-	float refractiveIndex;
-
-
+	float pixelSize[2];
+	float pad3[2];
 };
 
 struct InstanceData
 {
 	float	wVP[16];
-	float world[16];
-	float color[4];
+
+	float worldMatrix[16];
+
+	//Texture & Color blend:
+	float diffuseColor[3];
+	float diffuseBlendFactor;   //The weight of diffuseColor VS. diffuse texture (1: all from diffuseColor, 0: all from texture)
+
+	float specularColor[3];
+	float specularBlendFactor;   //The weight of specularColor VS. specular texture
+
+	float emissiveColor[3];
+	float emissiveBlendFactor;  //The weight of emissiveColor VS. emissive texture
+
+	//Texture Offset (UV offset)
+	float diffuseTextureOffset[2];
+	float specularTextureOffset[2];
+
+	float emissiveTextureOffset[2];
+	float normalTextureOffset[2];
+
+	UINT flags;
+	float alphaFactor;
+	float refractiveIndex;
+	float specularHardness;
+
+	float diffusePower;
+	float specularPower;
+	float emissivePower;
 	unsigned int bindMatrixOffset;
-	unsigned int instanceMaterialID;
 };
 
 struct Light
@@ -58,6 +67,5 @@ struct Light
 	float color[4];
 	float direction[3];//sport, directional
 	float angleCos;
-	
-	//float range;//sport, point
+	float vP[16];
 };

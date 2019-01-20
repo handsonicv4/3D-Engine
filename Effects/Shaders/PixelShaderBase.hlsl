@@ -2,26 +2,16 @@
 #include "LightFunc.hlsl"
 #include "Input.hlsl"
 #include "Texture.hlsl"
+#include "Skinning.hlsl"
 
 struct Light
 {
 	float4 color;
 	float3 direction;
 	float angleCos;
+	matrix lightVP;
 };
-struct MaterialType
-{
-	float diffusePower;
-	float specularPower;
-	float specularHardness;
-	float emissivity;
-	float refractiveIndex;
-	float3 diffuseColor;
-	float3 emissiveColor;
-	float3 specularColor;
-	float opacity;
-	uint flags;
-};
+
 struct Pixel
 {
 	float diffusePower;
@@ -36,7 +26,7 @@ struct Pixel
 	float3 normal;
 	float3 position;
 };
-StructuredBuffer<MaterialType> instanceMaterial : register(t6);
+
 Texture2D shadowMap: register(t10);
 StructuredBuffer<Light> Lights: register(t7);
 
@@ -64,24 +54,30 @@ bool IsInShadow(uniform float4 pixelLightPos, uniform float bias)
 Pixel GetPixel(uniform PSinput input)
 {
 	Pixel p = (Pixel)0;
-	p.diffuseColor = g_DiffuseColor;
-	p.emissiveColor = g_AmbientColor;
-	p.specularColor = g_SpecularColor;
-	p.diffusePower = g_DiffusePower;
-	p.specularPower = g_SpecularPower;
-	p.specularHardness = g_SpecularHardness;
-	p.emissivity = g_Emissivity;
-	p.opacity = g_AlphaFactor;
-	p.refractiveIndex = g_RefractiveIndex;
-	p.position = input.positionWorld.xyz;
-	p.normal = input.normal;
-	if (g_Flags & 0x02)
+	uint flags = instanceData[input.instanceID].flags;
+	p.opacity = 1;
+	if (flags & 0x02)
 	{
 		float4 color = SampleTexture(TEXTURE_DIFFUSE, SAMPLER_WARP, input.tex);
 		p.diffuseColor = color.rgb;
 		p.opacity = color.a;
 	}
-	if (g_Flags & 0x04)
+
+	float weight = instanceData[input.instanceID].diffuseBlendFactor;
+	float3 color = instanceData[input.instanceID].diffuseColor;
+	p.diffuseColor = p.diffuseColor * (1 - weight) + color * weight;
+	p.specularColor = instanceData[input.instanceID].specularColor;
+	p.emissiveColor = instanceData[input.instanceID].emissiveColor;
+	p.diffusePower = instanceData[input.instanceID].diffusePower;
+	p.specularPower = instanceData[input.instanceID].specularPower;
+	p.emissivity = instanceData[input.instanceID].emissivePower;
+	p.specularHardness = instanceData[input.instanceID].specularHardness;
+	p.opacity *= instanceData[input.instanceID].alphaFactor;
+	p.refractiveIndex = instanceData[input.instanceID].refractiveIndex;
+	p.position = input.positionWorld.xyz;
+	p.normal = input.normal;
+
+	if (flags & 0x04)
 	{
 		float4 normalMap = SampleTexture(TEXTURE_NORMAL, SAMPLER_WARP, input.tex);
 		normalMap = (normalMap - 0.5f)*2.0f;
@@ -90,7 +86,7 @@ Pixel GetPixel(uniform PSinput input)
 	}
 	return p;
 }
-
+/*
 Pixel GetInstancePixel(uniform PSinput input)
 {
 	uint id = input.instanceMaterialID - 1;
@@ -121,7 +117,7 @@ Pixel GetInstancePixel(uniform PSinput input)
 	}
 	return p;
 }
-
+*/
 float3 Diffuse(uniform Pixel p)
 {
 	//float3 lightDir = (float3)0;

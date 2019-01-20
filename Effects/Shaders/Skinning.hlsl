@@ -1,10 +1,36 @@
 struct InstanceType
 {
 	matrix wVP;
+
 	matrix world;
-	float4 color;
+
+	float3 diffuseColor;
+	float diffuseBlendFactor;
+
+	float3 specularColor;
+	float specularBlendFactor;
+
+	float3 emissiveColor;
+	float emissiveBlendFactor; 
+
+	float2 diffuseTextureOffset;
+	float2 specularTextureOffset;
+
+	float2 emissiveTextureOffset;
+	float2 normalTextureOffset;
+
+	uint flags;
+	float alphaFactor;
+	float refractiveIndex;
+	float specularHardness;
+
+	float diffusePower;
+	float specularPower;
+	float emissivePower;
 	uint bindMatrixOffset;
-	uint instanceMaterialID;
+
+	//uint bindMatrixOffset;
+	//uint instanceMaterialID;
 };
 StructuredBuffer<float4x4> boneMatrix : register(t5);
 StructuredBuffer<InstanceType> instanceData : register(t6);

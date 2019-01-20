@@ -2,6 +2,7 @@
 #include <windows.h>
 #include <vector>
 #include <map>
+#include <unordered_set>
 using namespace std;
 
 #include"ResourcePack.h"
@@ -9,6 +10,7 @@ using namespace std;
 #include"pipeline/Pass.h"
 #include"pipeline/Pipeline.h"
 #include"asset/Model.h"
+
 
 class GEngine
 {
@@ -28,15 +30,14 @@ public:
 	bool LoadEffect(const string &file);
 	void CloseEffect();
 	void Shutdown();
-	int LoadModel(Model &model);
+	AssetPack* LoadAsset(string file);
 	void UnloadModel(UINT modelID);
 	void UpdateLight(vector<Light> lights);
 
-	void Render(const Pass &pass);
+	void Render(const PassOperation &cfg);
 
 	void Render(const string &renderer);
 	
-	int CreateSurfaceRec(float width, float hieght, float leftTopX, float leftTopY);
 	bool Tiling();
 	unsigned int depthStencilBufferID;
 	float voxelSize[3];
@@ -44,8 +45,19 @@ public:
 
 	bool UpdateFrameBuffer();
 	bool UpdateLightBuffer();
-	map<int, ModelResource> modelList;
+	unordered_set<AssetPack*> resourcePacks;
+	unordered_set<ModelInstance*> instances;
+	ModelInstance* CreateInstance(const ModelInstance &bluePrint);
+	void Instancing(const RenderPair &rpair, const vector<InstanceData> &instanceData, const vector<aiMatrix4x4> &bindMatrix);
+	void LoadPostMesh(string file);
 private:
+	MeshResource postMesh;
+	
+	void UpdateBuckets();
+	void ApplyAnimation();
+	unordered_map<RenderPair, vector<InstanceData>> instanceBuckets;
+	unordered_map<RenderPair, vector<aiMatrix4x4>> bindMatrixBuckets;
+	
 	bool vsync_enabled;
 	bool fullscreen;
 	UINT oldResolutionX, oldResolutionY;
@@ -63,28 +75,13 @@ private:
 
 	//Buffers ID
 	 int frameBufferID;
-	 int objBufferID;
 	 int animationMatrixBufferID;
 	 int instanceBufferID;
-	 int instanceMaterialID;
 	 int lightBufferID;
-
 
 	//Data for Buffers
 	FrameBufferData frameData;
-	ObjBufferData objData;
-	vector<InstanceData> instanceData;
-	vector<aiMatrix4x4> animationMatrix;// bone matrix;
-	vector<InstanceMaterial> instanceMaterialData;// bone matrix;
 
 	bool InitBuffers();
-	void RenderMesh(MeshResource *pMesh);
-	void RenderMaterial(MaterialResource *pMaterial);
-	void RenderModel(ModelResource *pModel);
-	void UpdateInstanceBuffer(Model *pModel, unsigned int meshID);
-
-	bool UpdateObjBuffer();
-
-
 };
 

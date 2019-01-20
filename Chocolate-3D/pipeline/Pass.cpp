@@ -7,114 +7,7 @@
 using namespace std;
 using namespace json11;
 
-PassOperationType parsePassOperationType(const string& str)
-{
-	static unordered_map<string, PassOperationType> passOperationType;
-	if (!passOperationType.size())
-	{
-		passOperationType["draw"] = Pass_Operation_Draw;
-		passOperationType["compute"] = Pass_Operation_Compute;
-		passOperationType["generate_mip"] = Pass_Operation_Generate_Mip;
-		passOperationType["reset"] = Pass_Operation_Reset;
-		passOperationType["copy"] = Pass_Operation_Copy;
-	}
-	if (!passOperationType.count(str)) throw exception(("Parse PassOperationType Error : " + str).c_str());
-	return passOperationType[str];
-}
-
-BindingRule::BindingRule()
-{
-	slot = 0;
-	resourceID = -1;
-}
-
-PassOperation::PassOperation()
-{
-	type = Pass_Operation_Draw;
-	memset(threadSize, 0, sizeof(threadSize));
-	targetID = 0;
-	memset(value, 0, sizeof(value));
-}
-
-PassOperation::PassOperation(const json11::Json& obj, const unordered_map<string,int>& subresource):PassOperation()
-{
-	if(!obj.is_object()) throw exception("Parse PassOperation Error");
-	type = parsePassOperationType(obj["type"].string_value());
-	if (type == Pass_Operation_Compute)
-	{
-		if (!obj["threads"].is_array() || obj["threads"].array_items().size() != 3)
-			throw exception("Parse PassOperation Error");
-		const auto& arr = obj["threads"].array_items();
-		for (int i = 0; i < 3; i++)
-		{
-			if(!arr[i].is_number()) throw exception("Parse PassOperation Error");
-			threadSize[i] = arr[i].int_value();
-		}
-	}
-	else if (type == Pass_Operation_Reset)
-	{
-		if (!obj["target"].is_string() || !subresource.count(obj["target"].string_value()))
-			throw exception("Parse PassOperation Error");
-		string key = obj["target"].string_value();
-		targetID = subresource.find(key)->second;
-
-		if (!obj["value_type"].is_string() || !obj["value"].is_array())
-			throw exception("Parse PassOperation Error");
-		const auto& arr = obj["value"].array_items();
-		if (obj["value_type"].string_value() == "float")
-		{
-			if(arr.size() != 4) throw exception("Parse PassOperation Error");
-			for (int i = 0; i < 4 ; i++)
-			{
-				float v = arr[i].number_value();
-				value[i] = *((UINT*)&v);
-			}
-		}
-		else if (obj["value_type"].string_value() == "uint")
-		{
-			if (arr.size() != 4) throw exception("Parse PassOperation Error");
-			for (int i = 0; i < 4 ; i++)
-			{
-				UINT v = arr[i].int_value();
-				value[i] = v;
-			}
-		}
-		else if (obj["value_type"].string_value() == "depth")
-		{
-			if (arr.size() != 1) throw exception("Parse PassOperation Error");
-			value[0] = 1;
-			float v = arr[0].number_value();
-			value[1] = *((UINT*)&v);
-		}
-		else if (obj["value_type"].string_value() == "stencil")
-		{
-			if (arr.size() != 1) throw exception("Parse PassOperation Error");
-			value[0] = 2;
-			value[2] = arr[0].int_value();
-		}
-		else if (obj["value_type"].string_value() == "depth_stencil") {
-			if (arr.size() != 2) throw exception("Parse PassOperation Error");
-			value[0] = 3;
-			float v = arr[0].number_value();
-			value[1] = *((UINT*)&v);
-			value[2] = arr[1].int_value();
-		}
-		else throw exception("Parse PassOperation Error");
-	}
-	else if (type == Pass_Operation_Generate_Mip)
-	{
-		if (!obj["target"].is_string() || !subresource.count(obj["target"].string_value()))
-			throw exception("Parse PassOperation Error");
-		string key = obj["target"].string_value();
-		targetID = subresource.find(key)->second;
-
-	}
-	else if (type == Pass_Operation_Draw)
-	{
-
-	}
-	else throw exception("Parse PassOperation Error");
-}
+Pass* Pass::currentPass = NULL;
 
 Pass::Pass()
 {
@@ -127,7 +20,7 @@ Pass::Pass()
 	rasterizorStateID = -1;
 	blendStateID = -1;
 	viewPortID = -1;
-
+	type = Pass_Default;
 	//Defualt Topology
 	topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 }
@@ -144,28 +37,55 @@ void Pass::Load(const string& key, const int& id)
 	else throw exception(("Can not parse : " + key).c_str());
 }
 
-void Pass::LoadSampler(int id, PipelineStage stage, int slot)
-{
-	BindingRule rule;
-	rule.resourceID = id;
-	rule.stages = stage;
-	rule.slot = slot;
-	samplerBinding.push_back(move(rule));
-}
-
-void Pass::LoadResource(int id, PipelineStage stage, int slot, BindFlag bindFlag)
-{
-	BindingRule rule;
-	rule.resourceID = id;
-	rule.stages = stage;
-	rule.slot = slot;
-	rule.flag = bindFlag;
-	resourceBinding.push_back(move(rule));
-}
 
 void Pass::LoadTopology(const string & topology)
 {
 	this->topology = FileLoader::parseTopology(topology);
+}
+
+void Pass::Bind(const vector<int> & resourceID, const vector<int> & samplerID) const
+{
+	if(resourceID.size() != resourceBinding.size() ||
+		samplerID.size() != samplerBinding.size())
+		throw exception("Pass Cfg mismach!");
+
+	if(currentPass != NULL) currentPass->Unbind();
+
+	PipeLine::DepthStencilState().Apply(depthStencilStateID, 1);
+	float bf[] = { 1,1,1,1 };
+	PipeLine::BlendState().Apply(blendStateID, bf, 0xffffffff);
+	PipeLine::RasterizorState().Apply(rasterizorStateID);
+
+	PipeLine::ViewPort().Apply(viewPortID);
+
+	PipeLine::VertexShader().Activate(vertexShaderID);
+	PipeLine::PixelShader().Activate(pixelShaderID);
+	PipeLine::GeometryShader().Activate(geometryShaderID);
+
+	PipeLine::SetPrimitiveType(topology);
+	//Set resource binding
+	for (size_t i = 0; i < resourceBinding.size(); i++)
+	{
+		resourceBinding[i].Bind(resourceID[i]);
+	}
+	//Set sampler binding
+	for (size_t i = 0; i < samplerBinding.size(); i++)
+	{
+		samplerBinding[i].Bind(samplerID[i]);
+	}
+	currentPass = const_cast<Pass*>(this);
+}
+
+void Pass::Unbind() const
+{
+	for (int i = 0; i < resourceBinding.size(); i++)
+	{
+		const auto &bind = resourceBinding[i];
+		PipeLine::Resources().SetBinding(bind.stages, bind.flag, bind.slot, -1);
+	}
+
+	if (currentPass == this)
+		currentPass == NULL;
 }
 
 Pass::Pass(const json11::Json & jpass, const unordered_map<string, unordered_map<string, int>>& resourceMap):Pass()
@@ -175,7 +95,12 @@ Pass::Pass(const json11::Json & jpass, const unordered_map<string, unordered_map
 	auto& passData = jpass.object_items();
 	for (auto& item : passData)
 	{
-		if (resourceMap.count(item.first))
+		if (item.first == "type" && item.second.is_string())
+		{
+			if(item.second.string_value() == "post")
+				type = Pass_PostProcessing;
+		}
+		else if (resourceMap.count(item.first))
 		{
 			const auto& subRes = resourceMap.find(item.first)->second;
 			if (item.first == "sampler_state")
@@ -183,9 +108,7 @@ Pass::Pass(const json11::Json & jpass, const unordered_map<string, unordered_map
 				if (!item.second.is_array()) throw exception("Pass creation faild");
 				for (auto& bind : item.second.array_items())
 				{
-					if (!subRes.count(bind["name"].string_value()) || !bind["slot"].is_number())
-						throw exception("Pass creation faild");
-					LoadSampler(subRes.find(bind["name"].string_value())->second, FileLoader::parsePipelineStage(bind["stage"].string_value()), bind["slot"].int_value());
+					samplerBinding.push_back(move(SamplerPort(bind)));
 				}
 			}
 			else if (item.first == "resource")
@@ -193,9 +116,7 @@ Pass::Pass(const json11::Json & jpass, const unordered_map<string, unordered_map
 				if (!item.second.is_array()) throw exception("Pass creation faild");
 				for (auto& bind : item.second.array_items())
 				{
-					if (!subRes.count(bind["name"].string_value()) || !bind["slot"].is_number())
-						throw exception("Pass creation faild");
-					LoadResource(subRes.find(bind["name"].string_value())->second, FileLoader::parsePipelineStage(bind["stage"].string_value()), bind["slot"].int_value(), FileLoader::parseBindFlag(bind["binding_flag"].string_value()));
+					resourceBinding.push_back(move(ResourcePort(bind)));
 				}
 			}
 			else
@@ -205,15 +126,7 @@ Pass::Pass(const json11::Json & jpass, const unordered_map<string, unordered_map
 				Load(item.first, subRes.find(item.second.string_value())->second);
 			}
 		}
-		else if (item.first == "operation")
-		{
-			if (!item.second.is_array())
-				throw exception("Pass creation faild");
-			for (const auto& op : item.second.array_items())
-			{
-				operations.push_back(PassOperation(op, resourceMap.find("resource")->second));
-			}
-		}
+
 	}
 }
 
@@ -246,6 +159,140 @@ void Effect::DeleteResource(const string& type, const int& id)
 	else throw exception("Unknow Resource Type");
 }
 
+PassOperation Effect::LoadPassConfig(const json11::Json & json) const
+{
+	if (!json.is_object() || 
+		!json["pass"].is_string() || 
+		!passNameTable.count(json["pass"].string_value()) ||
+		(!json["sampler"].is_null() && !json["sampler"].is_array()) ||
+		(!json["resource"].is_null() && !json["resource"].is_array())
+		) 
+		throw exception("LoadPassConfig error");
+
+	
+	int passID = passNameTable.at(json["pass"].string_value());
+	PassOperation cfg(&passes[passID]);
+
+	if (!json["sampler"].is_null())
+	{
+		for (const auto& s : json["sampler"].array_items())
+		{
+			if(!s.is_string() || !resourceMap.at("sampler").count(s.string_value())) 	throw exception("LoadPassConfig error");
+			cfg.passSamplerID.push_back(resourceMap.at("sampler").at(s.string_value()));
+		}
+	}
+
+	if (!json["resource"].is_null())
+	{
+		for (const auto& s : json["resource"].array_items())
+		{
+			if (!s.is_string() || !resourceMap.at("resource").count(s.string_value())) 	throw exception("LoadPassConfig Error");
+			cfg.passResourceID.push_back(resourceMap.at("resource").at(s.string_value()));
+		}
+	}
+	
+	return move(cfg);
+}
+
+ResetOperation Effect::LoadResetOp(const json11::Json & json) const
+{
+	if (!json.is_object() || !json["reset"].is_string() || !json["value_type"].is_string() || !json["value"].is_array()) throw exception("Parse Operation Error");
+	string key = json["reset"].string_value();
+	if (!resourceMap.at("resource").count(key))  throw exception("Parse Operation Error");
+
+	ResetOperation op;
+	op.targetID = resourceMap.at("resource").at(key);
+
+	const auto& arr = json["value"].array_items();
+	if (json["value_type"].string_value() == "float")
+	{
+		if (arr.size() != 4) throw exception("Parse ResetOperation Error");
+		for (int i = 0; i < 4; i++)
+		{
+			float v = arr[i].number_value();
+			op.value[i] = *((UINT*)&v);
+		}
+	}
+	else if (json["value_type"].string_value() == "uint")
+	{
+		if (arr.size() != 4) throw exception("Parse ResetOperation Error");
+		for (int i = 0; i < 4; i++)
+		{
+			UINT v = arr[i].int_value();
+			op.value[i] = v;
+		}
+	}
+	else if (json["value_type"].string_value() == "depth")
+	{
+		if (arr.size() != 1) throw exception("Parse ResetOperation Error");
+		op.value[0] = 1;
+		float v = arr[0].number_value();
+		op.value[1] = *((UINT*)&v);
+	}
+	else if (json["value_type"].string_value() == "stencil")
+	{
+		if (arr.size() != 1) throw exception("Parse ResetOperation Error");
+		op.value[0] = 2;
+		op.value[2] = arr[0].int_value();
+	}
+	else if (json["value_type"].string_value() == "depth_stencil") {
+		if (arr.size() != 2) throw exception("Parse ResetOperation Error");
+		op.value[0] = 3;
+		float v = arr[0].number_value();
+		op.value[1] = *((UINT*)&v);
+		op.value[2] = arr[1].int_value();
+	}
+	else throw exception("Parse ResetOperation Error");
+
+	return op;
+}
+
+GenMipOperation Effect::LoadGenMipOp(const json11::Json & json) const
+{
+	if(!json.is_object() || !json["gen_mip"].is_string() || !resourceMap.at("resource").count(json["gen_mip"].string_value()))  throw exception("Load GenMip Error");
+	GenMipOperation op;
+	op.targetID = resourceMap.at("resource").at(json["gen_mip"].string_value());
+	return op;
+}
+
+
+vector<Operation*> Effect::LoadRenderer(const json11::Json & json)
+{
+	if(!json.is_array()) throw exception("Load Renderer Error");
+	vector<Operation*> result;
+	for (const auto& e : json.array_items())
+	{
+		if (!e.is_object()) 
+			throw exception("Load Operation Error");
+		if (e["pass"].is_string())
+		{
+			result.push_back(new PassOperation(LoadPassConfig(e)));
+		}
+		else if (e["reset"].is_string())
+		{
+			result.push_back(new ResetOperation(LoadResetOp(e)));
+		}
+		else if (e["gen_mip"].is_string())
+		{
+			result.push_back(new GenMipOperation(LoadGenMipOp(e)));
+		}
+		else  throw exception("Load Operation Error");
+	}
+	return move(result);
+}
+
+void Effect::Apply()
+{
+	PipeLine::InputLayout().Activate(inputLayout);
+	for (const auto& sampler : staticSamplers)
+	{
+		sampler.first.Bind(sampler.second);
+	}
+	for (const auto& resource : staticResources)
+	{
+		resource.first.Bind(resource.second);
+	}
+}
 
 Effect* Effect::Create(const string & filePath)
 {
@@ -270,10 +317,13 @@ Effect* Effect::Create(const string & filePath)
 		while (upper > 0 && workingFolder[upper] != '\\') upper--;
 		workingFolder.resize(upper + 1);
 
+		//Check
 		if (!json["resource"].is_object()) throw exception(("Error: can not read \"resource\". " + filePath).c_str());
 		if (!json["pass"].is_object()) throw exception(("Error: can not read \"pass\". " + filePath).c_str());
 		if (!json["renderer"].is_object()) throw exception(("Error: can not read \"renderer\". " + filePath).c_str());
 		if (!json["config"].is_object()) throw exception(("Error: can not read \"config\". " + filePath).c_str());
+		if (!json["static_sampler"].is_null() && !json["static_sampler"].is_array()) throw exception(("Error: can not read \"static_sampler\". " + filePath).c_str());
+		if (!json["static_resource"].is_null() && !json["static_resource"].is_array()) throw exception(("Error: can not read \"static_resource\". " + filePath).c_str());
 
 		//Load InputLayout:
 		if (!json["config"]["input_layout"].is_string()) throw exception(("Error: can not read \"input_layout\". " + filePath).c_str());
@@ -298,13 +348,33 @@ Effect* Effect::Create(const string & filePath)
 			}
 		}
 
+		//Load Static Samplers
+		if (json["static_sampler"].is_array())
+		{
+			for (auto& s : json["static_sampler"].array_items())
+			{
+				if(!s["name"].is_string() || !effect->resourceMap["sampler_state"].count(s["name"].string_value())) throw exception(("Error: can not parse static_sampler, in " + filePath).c_str());
+				effect->staticSamplers.push_back(make_pair(SamplerPort(s), effect->resourceMap["sampler_state"][s["name"].string_value()]));
+			}
+		}
+
+		//Load Static Resources
+		if (json["static_resource"].is_array())
+		{
+			for (auto& s : json["static_resource"].array_items())
+			{
+				if (!s["name"].is_string() || !effect->resourceMap["resource"].count(s["name"].string_value())) throw exception(("Error: can not parse static_resource, in " + filePath).c_str());
+
+				effect->staticResources.push_back(make_pair(ResourcePort(s), effect->resourceMap["resource"][s["name"].string_value()]));
+			}
+		}
+
 		//Load Pass:
 		auto& jpass = json["pass"].object_items();
-		unordered_map<string, int> passName;
 		for (auto& e : jpass)
 		{
-			passName[e.first] = effect->passes.size();
-			effect->passes.push_back(Pass(e.second, effect->resourceMap));
+			effect->passNameTable[e.first] = effect->passes.size();
+			effect->passes.push_back(move(Pass(e.second, effect->resourceMap)));
 		}
 
 		//Load renderer
@@ -312,11 +382,7 @@ Effect* Effect::Create(const string & filePath)
 		for (auto& e : jrenderer)
 		{
 			if (!e.second.is_array()) throw exception(("Error: can not parse renderer: " + e.first + ", in " + filePath).c_str());
-			for (auto& pname : e.second.array_items())
-			{
-				if(!passName.count(pname.string_value()))  throw exception(("Error: can not parse renderer: " + e.first + ", in " + filePath).c_str());
-				effect->renderers[e.first].push_back(passName[pname.string_value()]);
-			}
+			effect->renderer[e.first] = effect->LoadRenderer(e.second);
 		}
 	}
 	catch (exception ex)
@@ -338,7 +404,103 @@ Effect::~Effect()
 		}
 		resType.second.clear();
 	}
-	resourceMap.clear();
-	passes.clear();
-	renderers.clear();
+
+	for (auto& vec : renderer)
+	{
+		for (auto p : vec.second)
+		{
+			delete p;
+		}
+	}
 }
+
+PassOperation::PassOperation(const Pass* p) : pPass(p)
+{
+	if (p->type == Pass_PostProcessing)
+		type = Operation_Post_Proc;
+	else
+		type = Operation_Pass;
+}
+
+void PassOperation::Execute()
+{
+	pPass->Bind(passResourceID, passSamplerID);
+
+}
+
+ResetOperation::ResetOperation()
+{
+	type = Operation_Reset;
+	targetID = -1;
+	targetID = 0;
+	value[0] = 0;
+	value[1] = 0;
+	value[2] = 0;
+	value[3] = 0;
+}
+
+void ResetOperation::Execute()
+{
+	PipeLine::Resources().Reset(targetID, value);
+}
+
+GenMipOperation::GenMipOperation()
+{
+	type = Operation_GenMip;
+	targetID = -1;
+}
+
+void GenMipOperation::Execute()
+{
+	PipeLine::Resources().GenerateMipMap(targetID);
+}
+
+ResourcePort::ResourcePort(const json11::Json & json)
+{
+	if (!json.is_object() ||
+		!json["slot"].is_number() ||
+		 json["slot"].int_value() <0 ||
+		!json["stage"].is_string() ||
+		!json["binding_flag"].is_string()
+		)
+		throw exception("ResourceBinding creation faild");
+
+	stages = FileLoader::parsePipelineStage(json["stage"].string_value());
+	flag = FileLoader::parseBindFlag(json["binding_flag"].string_value());
+	slot = json["slot"].int_value();
+}
+
+void ResourcePort::Bind(int resID) const
+{
+	PipeLine::Resources().SetBinding(stages, flag, slot, resID);
+}
+
+void ResourcePort::Unbind() const
+{
+	PipeLine::Resources().SetBinding(stages, flag, slot, -1);
+}
+
+SamplerPort::SamplerPort(const json11::Json & json)
+{
+	if (!json.is_object() ||
+		!json["slot"].is_number() ||
+		json["slot"].int_value() < 0 ||
+		!json["stage"].is_string()
+		)
+		throw exception("ResourceBinding creation faild");
+
+	stages = FileLoader::parsePipelineStage(json["stage"].string_value());
+	slot = json["slot"].int_value();
+}
+
+void SamplerPort::Bind(int resID) const
+{
+	PipeLine::SamplerState().Apply(resID, stages, slot);
+}
+
+void SamplerPort::Unbind() const
+{
+	PipeLine::SamplerState().Apply(-1, stages, slot);
+}
+
+

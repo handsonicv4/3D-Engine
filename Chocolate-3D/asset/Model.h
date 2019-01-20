@@ -31,6 +31,7 @@ class NodeList : public vector<Node>
 {
 public:
 	void GetGlobalMatrix(vector<aiMatrix4x4> &outNodeGlobals);
+	vector<aiMatrix4x4> GetGlobalMatrix();
 private:
 	void GetGlobalMatrixRecur(const aiMatrix4x4 &parentGlobal, int nodeID, vector<aiMatrix4x4> &outNodeGlobals);
 };
@@ -81,7 +82,7 @@ public:
 	vector<VecKey> scalingKeys;
 	vector<QuatKey> rotationKeys;
 	double tickDuration;
-	int nodeID;
+	int nodeID; //Corresponding node index in nodeList
 	NodeFrame Evaluate(double tick);
 
 	NodeAnimation();

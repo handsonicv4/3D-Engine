@@ -157,6 +157,7 @@
     <ClCompile Include="pipeline\ResourceManager.cpp" />
     <ClCompile Include="pipeline\ShaderManager.cpp" />
     <ClCompile Include="pipeline\StateManager.cpp" />
+    <ClCompile Include="ResourcePack.cpp" />
     <ClCompile Include="test.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

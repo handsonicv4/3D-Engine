@@ -63,7 +63,7 @@ protected:
 	static Resource* Create(ResourceDesc desc, void* pData = NULL, size_t dataSize = 0);
 	static  Resource* GetBackBuffer();
 	bool ResetData(const UINT value[4]);
-	bool UpdateData(void * pData, size_t size);
+	bool UpdateData(const void * pData, size_t size);
 	bool GenerateMips();
 	void Release();
 	virtual ~Resource();
@@ -94,7 +94,7 @@ public:
 	int Create(ResourceDesc desc, void* pData = NULL, size_t dataSize = 0);
 	int CreateFromFile(const string& filePath);
 	int GetBackBuffer();
-	bool UpdateResourceData(UINT resourceID, void* pData, UINT size);
+	bool UpdateResourceData(UINT resourceID, const void* pData, UINT size);
 	void CopyResourceData(UINT srcID, UINT dstID);
 	bool GenerateMipMap(UINT id);
 	void Reset(UINT id, const float value[4]);

@@ -40,6 +40,13 @@ void NodeList::GetGlobalMatrix(vector<aiMatrix4x4>& outNodeGlobals)
 	GetGlobalMatrixRecur(aiMatrix4x4(), 0, outNodeGlobals);
 }
 
+vector<aiMatrix4x4> NodeList::GetGlobalMatrix()
+{
+	vector<aiMatrix4x4> res;
+	GetGlobalMatrixRecur(aiMatrix4x4(), 0, res);
+	return move(res);
+}
+
 BindingBone::BindingBone()
 {
 	name = "";

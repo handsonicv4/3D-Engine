@@ -1,0 +1,9 @@
+{
+  "name": "target_texture",
+  "type": "texture2d",
+  "size": [ 1280, 720 ],
+  "bind_flag": [ "render_target", "shader_resource" ],
+  "access": "default",
+  "mip_level": 2,
+  "format": "r8g8b8a8_unorm"
+}

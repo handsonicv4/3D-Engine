@@ -4,10 +4,11 @@
 #include"asset/Model.h"
 using namespace std;
 
+//A pre-combined mesh resource in graphics memory, shared by all it's instance
+//Typically immutable
 class MeshResource
 {
 public:
-	MeshResource();
 	int positionID;
 	int normalID;
 	int tangentID;
@@ -17,84 +18,122 @@ public:
 	int indiceID;
 	int boneIndexID;
 	int boneWeightID;
-
-	UINT vertexCount;
 	UINT indexCount;
-	int materialID;
+	vector<BindingBone> boneList;
+	int nodeID;
+	MeshResource();
+	void Render() const;
 };
 
-inline MeshResource::MeshResource()
-{
-	positionID = -1;
-	normalID = -1;
-	tangentID = -1;
-	bitangentID = -1;
-	colorID = -1;
-	texCoordID = -1;
-	indiceID = -1;
-	boneIndexID = -1;
-	boneWeightID = -1;
-	vertexCount = 0;
-	indexCount = 0;
-	materialID = -1;
-}
 
+//A pre-combined textures resource in graphics memory, shared by all it's instance
+//Typically immutable
 class MaterialResource
 {
 public:
-	MaterialResource();
 	int diffuseMap;
 	int specularMap;
 	int ambientMap;
 	int normalMap;
-
-	float diffusePower;
-	float specularHardness;
-	float specularPower;
-	float emissivity;
-	float refractiveIndex;
-	float diffuseColor[3];
-	float ambientColor[3];
-	float specularColor[3];
-	float opacity;
+	MaterialResource();
+	void Render() const;
 };
-inline MaterialResource::MaterialResource()
-{
-	diffuseMap = -1;
-	specularMap = -1;
-	ambientMap = -1;
-	normalMap = -1;
 
-	diffusePower=1;
-	specularHardness=1;
-	specularPower = 1;
-	emissivity = 0;
-	refractiveIndex = 1;
-	diffuseColor[0] = 1;
-	diffuseColor[1] = 1;
-	diffuseColor[2] = 1;
-	ambientColor[0] = 1;
-	ambientColor[1] = 1;
-	ambientColor[2] = 1;
-	specularColor[0] = 1;
-	specularColor[1] = 1;
-	specularColor[2] = 1;
-	opacity = 1;
-}
-
-class ModelResource
+//RenderPair: used as keys to classify instances according to meshs and materials, accelerate instancing.
+class RenderPair
 {
 public:
-	ModelResource();
-	vector<MeshResource> meshes;
-	vector<MaterialResource> materials;
-	UINT animationCount;
-	bool hasAnimation;
-	Model* model;
+	MeshResource* pMeshResource;
+	MaterialResource* pMaterialResource;
+	RenderPair();
+	RenderPair(MeshResource* pMesh, MaterialResource* pMaterial);
+	bool operator==(const RenderPair &other) const;
+	void Render() const;
 };
-inline ModelResource::ModelResource()
-{
-	animationCount = 0;
-	hasAnimation = false;
-	model = NULL;
+
+//Hash function for renderPair
+namespace std {
+	template<>
+	struct hash<RenderPair>
+	{
+		std::size_t operator()(const RenderPair &rp) const;
+	};
+
+	inline std::size_t hash<RenderPair>::operator()(const RenderPair & rp) const
+	{
+		return std::hash<MeshResource*>()(rp.pMeshResource) ^ std::hash<MaterialResource*>()(rp.pMaterialResource);
+	}
+
 }
+
+//Represent each mesh instance, give flexibility for instancing
+class MeshInstance
+{
+public:
+	MeshResource* pResource;
+	vector<aiMatrix4x4> bindMatrix;
+	MeshInstance();
+	MeshInstance(MeshResource* pMesh);
+};
+
+class MaterialInstance
+{
+public:
+	MaterialResource* pResource;
+	float diffusePower;
+	float specularPower;
+	float emissivePower;
+	float specularHardness;
+	float refractiveIndex;
+	float opacity;
+	float diffuseTextureOffset[2];
+	float specularTextureOffset[2];
+	float emissiveTextureOffset[2];
+	float normalTextureOffset[2];
+	float diffuseColor[3];
+	float specularColor[3];
+	float emissiveColor[3];
+	float diffuseBlendFactor;
+	float specularBlendFactor;
+	float emissiveBlendFactor;
+	bool normalTextureEnable;
+	MaterialInstance();
+};
+
+class GraphicInstance
+{
+public:
+	MeshInstance meshInstance;
+	MaterialInstance materialInstance;
+};
+
+class AssetPack;
+
+class ModelInstance
+{
+public:
+	bool visible;
+	vector<GraphicInstance> components;
+	Transform transform;
+	int animationID;
+	float animationTime;
+	AssetPack* pack;
+	ModelInstance();
+	void ApplyAnimation();
+	void Destroy();
+	bool IsDestroied();
+private:
+	bool isDestroied;
+};
+
+//A combined Graphics ResourcePack typically created from model files
+class AssetPack
+{
+public:
+	vector<MeshResource> meshs;
+	vector<MaterialResource> materials;
+	NodeList nodeList;
+	vector<Animation> animationList;
+	ModelInstance defaultInstance;
+	AssetPack();
+};
