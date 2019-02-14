@@ -123,8 +123,10 @@ bool GEngine::InitBuffers()
 	PipeLine::Resources().SetBinding(Stage_Geometry_Shader, Bind_Constant_Buffer, Slot_CBuffer_Frame, frameBufferID);
 
 	PipeLine::Resources().SetBinding(Stage_Vertex_Shader, Bind_Shader_Resource, Slot_Texture_AnimMatrix, animationMatrixBufferID);
+
 	PipeLine::Resources().SetBinding(Stage_Vertex_Shader, Bind_Shader_Resource, Slot_Texture_Instance, instanceBufferID);
 	PipeLine::Resources().SetBinding(Stage_Pixel_Shader, Bind_Shader_Resource, Slot_Texture_Instance, instanceBufferID);
+
 	PipeLine::Resources().SetBinding(Stage_Pixel_Shader, Bind_Shader_Resource, Slot_Texture_Light, lightBufferID);
 	PipeLine::Resources().SetBinding(Stage_Vertex_Shader, Bind_Shader_Resource, Slot_Texture_Light, lightBufferID);
 
@@ -269,13 +271,11 @@ bool GEngine::UpdateFrameBuffer()
 	aiMatrix4x4 projection = camera.GetProjectionMatrix();
 	aiMatrix4x4 projectionInv = projection;
 	projectionInv.Inverse();
-	aiMatrix4x4 lightVP = mainLight.GetProjectionMatrix()*mainLight.GetViewMatrix();
 
 	memcpy(&frameData.projection, &projection, sizeof(float[16]));
 	memcpy(&frameData.projectionInv, &projectionInv, sizeof(float[16]));
 	memcpy(&frameData.voxelDimention, &voxelDimention, sizeof(float[3]));
 	memcpy(&frameData.voxelSize, &voxelSize, sizeof(float[3]));
-	memcpy(&frameData.lightVP, &lightVP, sizeof(float[16]));
 	//memcpy(&frameData.viewProjection, &viewProjection, sizeof(float[16]));
 
 	aiVector3D position = camera.GetPosition();

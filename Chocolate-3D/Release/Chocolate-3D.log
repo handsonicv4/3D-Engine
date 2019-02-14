@@ -1,4 +1,24 @@
-﻿  test.cpp
+﻿  GEngine.cpp
+e:\github\chocolate-3d\chocolate-3d\gengine.cpp(42): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+e:\github\chocolate-3d\chocolate-3d\gengine.cpp(43): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+e:\github\chocolate-3d\chocolate-3d\gengine.cpp(44): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+e:\github\chocolate-3d\chocolate-3d\gengine.cpp(333): warning C4018: “<”: 有符号/无符号不匹配
+e:\github\chocolate-3d\chocolate-3d\gengine.cpp(406): warning C4018: “<”: 有符号/无符号不匹配
+e:\github\chocolate-3d\chocolate-3d\gengine.cpp(441): warning C4018: “<”: 有符号/无符号不匹配
+  ResourcePack.cpp
+e:\github\chocolate-3d\chocolate-3d\resourcepack.cpp(58): warning C4018: “>=”: 有符号/无符号不匹配
+  DescFileLoader.cpp
+  Pass.cpp
+e:\github\chocolate-3d\chocolate-3d\pipeline\pass.cpp(81): warning C4018: “<”: 有符号/无符号不匹配
+e:\github\chocolate-3d\chocolate-3d\pipeline\pass.cpp(88): warning C4553: “==”: 未使用表达式结果；是否打算使用“=”?
+e:\github\chocolate-3d\chocolate-3d\pipeline\pass.cpp(212): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
+e:\github\chocolate-3d\chocolate-3d\pipeline\pass.cpp(229): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
+e:\github\chocolate-3d\chocolate-3d\pipeline\pass.cpp(241): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
+  Pipeline.cpp
+  ResourceManager.cpp
+  ShaderManager.cpp
+  StateManager.cpp
+  test.cpp
 e:\github\chocolate-3d\chocolate-3d\test.cpp(58): warning C4305: “=”: 从“double”到“TReal”截断
           with
           [
@@ -30,23 +50,27 @@ e:\github\chocolate-3d\chocolate-3d\test.cpp(123): warning C4305: “初始化�
 e:\github\chocolate-3d\chocolate-3d\test.cpp(127): warning C4305: “初始化”: 从“double”到“float”截断
 e:\github\chocolate-3d\chocolate-3d\test.cpp(164): warning C4018: “<”: 有符号/无符号不匹配
 e:\github\chocolate-3d\chocolate-3d\test.cpp(181): warning C4305: “+=”: 从“double”到“float”截断
-e:\github\chocolate-3d\chocolate-3d\test.cpp(206): warning C4305: “参数”: 从“double”到“TReal”截断
+e:\github\chocolate-3d\chocolate-3d\test.cpp(207): warning C4305: “参数”: 从“double”到“TReal”截断
           with
           [
               TReal=float
           ]
-e:\github\chocolate-3d\chocolate-3d\test.cpp(211): warning C4305: “参数”: 从“double”到“float”截断
-e:\github\chocolate-3d\chocolate-3d\test.cpp(245): warning C4305: “=”: 从“double”到“float”截断
-e:\github\chocolate-3d\chocolate-3d\test.cpp(253): warning C4305: “=”: 从“double”到“float”截断
+e:\github\chocolate-3d\chocolate-3d\test.cpp(212): warning C4305: “参数”: 从“double”到“float”截断
+e:\github\chocolate-3d\chocolate-3d\test.cpp(246): warning C4305: “=”: 从“double”到“float”截断
 e:\github\chocolate-3d\chocolate-3d\test.cpp(254): warning C4305: “=”: 从“double”到“float”截断
 e:\github\chocolate-3d\chocolate-3d\test.cpp(255): warning C4305: “=”: 从“double”到“float”截断
-e:\github\chocolate-3d\chocolate-3d\test.cpp(261): warning C4305: “参数”: 从“double”到“float”截断
-e:\github\chocolate-3d\chocolate-3d\test.cpp(262): warning C4305: “=”: 从“double”到“float”截断
-e:\github\chocolate-3d\chocolate-3d\test.cpp(264): warning C4305: “=”: 从“double”到“float”截断
+e:\github\chocolate-3d\chocolate-3d\test.cpp(256): warning C4305: “=”: 从“double”到“float”截断
+e:\github\chocolate-3d\chocolate-3d\test.cpp(262): warning C4305: “参数”: 从“double”到“float”截断
+e:\github\chocolate-3d\chocolate-3d\test.cpp(263): warning C4305: “=”: 从“double”到“float”截断
 e:\github\chocolate-3d\chocolate-3d\test.cpp(265): warning C4305: “=”: 从“double”到“float”截断
+e:\github\chocolate-3d\chocolate-3d\test.cpp(266): warning C4305: “=”: 从“double”到“float”截断
+e:\github\chocolate-3d\chocolate-3d\test.cpp(278): warning C4305: “参数”: 从“double”到“float”截断
+e:\github\chocolate-3d\chocolate-3d\test.cpp(280): warning C4305: “=”: 从“double”到“float”截断
+e:\github\chocolate-3d\chocolate-3d\test.cpp(303): warning C4305: “=”: 从“double”到“float”截断
+e:\github\chocolate-3d\chocolate-3d\test.cpp(204): warning C4101: “a”: 未引用的局部变量
   正在生成代码
-  1 of 11029 functions (<0.1%) were compiled, the rest were copied from previous compilation.
+  17 of 11031 functions ( 0.2%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
-    0 functions had inline decision re-evaluated but remain unchanged
+    1 functions had inline decision re-evaluated but remain unchanged
   已完成代码的生成
   Chocolate-3D.vcxproj -> E:\Github\Chocolate-3D\Release\Chocolate-3D.exe

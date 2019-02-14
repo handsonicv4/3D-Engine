@@ -86,38 +86,7 @@ Pixel GetPixel(uniform PSinput input)
 	}
 	return p;
 }
-/*
-Pixel GetInstancePixel(uniform PSinput input)
-{
-	uint id = input.instanceMaterialID - 1;
-	Pixel p = (Pixel)0;
-	p.diffuseColor = instanceMaterial[id].diffuseColor;
-	p.emissiveColor = instanceMaterial[id].emissiveColor;
-	p.specularColor = instanceMaterial[id].specularColor;
-	p.diffusePower = instanceMaterial[id].diffusePower;
-	p.specularPower = instanceMaterial[id].specularPower;
-	p.specularHardness = instanceMaterial[id].specularHardness;
-	p.emissivity = instanceMaterial[id].emissivity;
-	p.opacity = instanceMaterial[id].opacity;
-	p.refractiveIndex = instanceMaterial[id].refractiveIndex;
-	p.position = input.positionWorld.xyz;
-	p.normal = input.normal;
-	if (0x02 & g_Flags & instanceMaterial[id].flags)
-	{
-		float4 color = SampleTexture(TEXTURE_DIFFUSE, SAMPLER_WARP, input.tex);
-		p.diffuseColor = color.rgb;
-		p.opacity = color.a;
-	}
-	if (0x04 & g_Flags & instanceMaterial[id].flags)
-	{
-		float4 normalMap = SampleTexture(TEXTURE_NORMAL, SAMPLER_WARP, input.tex);
-		normalMap = (normalMap - 0.5f)*2.0f;
-		p.normal = (normalMap.x*input.tangent) + (normalMap.y*input.bitangent) + (normalMap.z*input.normal);
-		p.normal = normalize(p.normal);
-	}
-	return p;
-}
-*/
+
 float3 Diffuse(uniform Pixel p)
 {
 	//float3 lightDir = (float3)0;

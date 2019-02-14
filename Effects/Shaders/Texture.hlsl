@@ -26,13 +26,13 @@ float4 GuassainBlur(bool isHorizontal, float2 texCoord, uint textureID)
 	const float offset[step] = { 0.53805, 2.06278 };
 
 	float4 result = (float4) 0;
-	float2 pixelOffset = 2.0f / g_ScreenDimensions;
+	float2 pixelOffset = 1.0f / g_ScreenDimensions;
 	if (isHorizontal) pixelOffset.y = 0;
 	else pixelOffset.x = 0;
 	for (int i = 0; i < step; i++)
 	{
 		float2 texOffset = dot(offset[i] , pixelOffset);
-		float4 color = SampleTexture(textureID, SAMPLER_WARP, texCoord + texOffset,1) + SampleTexture(textureID, SAMPLER_WARP, texCoord - texOffset,1);
+		float4 color = SampleTexture(textureID, SAMPLER_WARP, texCoord + texOffset,0) + SampleTexture(textureID, SAMPLER_WARP, texCoord - texOffset,0);
 		result += weights[i] * color;
 	}
 	return result;

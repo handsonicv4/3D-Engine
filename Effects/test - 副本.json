@@ -29,8 +29,7 @@
     },
     "rasterizer_state": {
       "default": "States\\RS_Default.json",
-      "no_cull": "States\\RS_No_Cull.json",
-      "msaa": "States\\RS_No_Cull_MSAA.json"
+      "no_cull": "States\\RS_No_Cull.json"
     },
     "depth_stencil_state": {
       "default": "States\\DSS_Default.json",
@@ -54,8 +53,7 @@
       "voxel_texture": "Resources\\voxel.json",
       "shadow_map": "Resources\\ShadowMap.json",
       "target": "Resources\\Target.json",
-      "target2": "Resources\\Target.json",
-      "msaa": "Resources\\MSAATX.json"
+      "target2": "Resources\\Target.json"
     }
   },
   "static_sampler": [
@@ -174,7 +172,7 @@
       "vertex_shader": "voxelization",
       "geometry_shader": "voxelization",
       "pixel_shader": "voxelization",
-      "rasterizer_state": "msaa",
+      "rasterizer_state": "no_cull",
       "depth_stencil_state": "disable",
       "blend_state": "disable",
       "view_port": "voxelization",
@@ -192,7 +190,12 @@
           "stage": "output_merge",
           "slot": 0
         },
-
+        {
+          "name": "depth_stencil",
+          "binding_flag": "depth_stencil",
+          "stage": "output_merge",
+          "slot": 0
+        },
         {
           "name": "voxel_texture",
           "binding_flag": "unordered_access",
@@ -433,6 +436,31 @@
         "resource": [ "shadow_map", "depth_stencil" ]
       },
 
+      {
+        "reset": "depth_stencil",
+        "value": [ 1.0 ],
+        "value_type": "depth"
+      },
+      {
+        "reset": "target",
+        "value": [ 0, 0, 0, 0 ],
+        "value_type": "float"
+      },
+
+      {
+        "pass": "shadow_map",
+        "resource": [ "shadow_map", "target", "depth_stencil" ]
+      },
+      { "gen_mip": "target" },
+      {
+        "pass": "blur_h",
+        "resource": [ "target", "target2" ]
+      },
+      { "gen_mip": "target2" },
+      {
+        "pass": "blur_v",
+        "resource": [ "target2", "target" ]
+      },
 
       {
         "reset": "voxel_texture",
@@ -441,7 +469,7 @@
       },
       {
         "pass": "voxelization",
-        "resource": [ "shadow_map", "msaa", "voxel_texture" ]
+        "resource": [ "shadow_map", "back_buffer", "depth_stencil", "voxel_texture" ]
       },
       {
         "gen_mip": "voxel_texture"
@@ -487,6 +515,11 @@
         "reset": "depth_stencil",
         "value": [ 1.0 ],
         "value_type": "depth"
+      },
+      {
+        "reset": "target",
+        "value": [ 0, 0, 0, 0 ],
+        "value_type": "float"
       },
 
       {

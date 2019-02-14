@@ -23,6 +23,22 @@ float3 WorldToVoxelUVW(float3 pos)
 	return (pos + 0.5*g_VoxelDimention*g_VoxelSize) / (g_VoxelDimention*g_VoxelSize);
 }
 
+float TraceAlpha(float3 from, uniform float spread, uniform float initStride, uniform float maxDistance, in float3 direction)
+{
+	float result = 0;
+	float distance = initStride;
+	while (distance < maxDistance && result < 0.9)
+	{
+		float3 samplePoint = from + distance * direction;
+		float diameter = spread * distance;//Diameter in UVW space
+		float mip = max(1.7,log2(1 + diameter * g_VoxelDimention.x));
+		float4 color = voxelTexture.SampleLevel(samplers[1], samplePoint, min(5.7, mip));
+		result += (1 - result)*color.a;
+		distance += diameter / (2.0 - spread);
+	}
+	return saturate(result);
+}
+
 //All parameter in UVW space
 float3 TraceCone(float3 from, uniform float spread, uniform float initStride, uniform float maxDistance, in float3 direction)
 {
@@ -34,7 +50,6 @@ float3 TraceCone(float3 from, uniform float spread, uniform float initStride, un
 		float3 samplePoint = from + distance*direction;
 		float diameter = spread * distance;//Diameter in UVW space
 		float mip =  log2(1 + diameter *g_VoxelDimention.x);
-		float mip2 = (mip + 1)*(mip + 1);
 		float4 color = voxelTexture.SampleLevel(samplers[1], samplePoint, min(5.7, mip));
 		result.rgb +=  0.04*((1 - result.a)* color.a* color.rgb*pow(2,mip+5));
 		result.a += (1-result.a)*color.a;
@@ -52,7 +67,6 @@ float3 TraceCone1(float3 from, uniform float spread, uniform float initStride, u
 		float3 samplePoint = from + distance*direction;
 		float diameter = spread * distance;//Diameter in UVW space
 		float mip = log2(1 + diameter *g_VoxelDimention.x);
-		float mip2 = (mip + 1)*(mip + 1);
 		float4 color = voxelTexture.SampleLevel(samplers[1], samplePoint, min(5.7, mip));
 		result.rgb += 0.04*((1 - result.a)* color.a* color.rgb*pow(2, mip + 4));
 		result.a += (1 - result.a)*color.a;
@@ -118,14 +132,19 @@ float4 main(PSinput input) : SV_TARGET
 	float3 pos = WorldToVoxelUVW(p.position);
 	float3 cameraDir = normalize(g_CameraPos - p.position);
 
+
 	float3 diffuse = (float3)0;
 	float3 specular = (float3)0;
 	float3 rs = (float3)0;
 
+	float3 lidir= normalize(Lights[0].direction - p.position.xyz);
+
+	float oclution = saturate(1.2*TraceAlpha(pos + input.normal / g_VoxelDimention * 3, 0.28, voxelStride * 2, 0.7, lidir));
+
 	//if (!IsInShadow(input.positionLight, 0.0001f))
 	//{
-		diffuse = Diffuse(p);
-		specular = Specular(p);
+		diffuse = (1 - oclution)*(1 - oclution) * Diffuse(p);
+		specular = (1 - oclution)*(1 - oclution) * Specular(p);
 	//}
 	diffuse += p.diffusePower*TraceDiffuseCones(pos, p.normal, voxelStride*2, 1.4);
 
@@ -140,9 +159,14 @@ float4 main(PSinput input) : SV_TARGET
 		float3 refractDir = refract(-cameraDir, p.normal, 0.7);
 		rs = 6 * TraceCone1(pos - input.normal / g_VoxelDimention *2, 0.2, voxelStride*4, 1.4, refractDir);
 	}
-	float shade = shadowMap.Sample(samplers[1], PositionToUV(input.position)).r;
+	float shade = 1;
 	
 	float4 result = float4(shade*(p.opacity*diffuse*p.diffuseColor+specular*p.specularColor)+ (1-p.opacity)*rs + p.emissivity*p.emissiveColor, p.opacity);
-
+	//float4 result;
+	//oclution = saturate(1 - oclution);
+	//result.x = oclution;
+	//result.y = oclution;
+	//result.z = oclution;
+	//result.w = 1;
 	return   result;
 }

@@ -47,13 +47,27 @@ struct ResourceDesc
 {
 	string name;
 	ResourceType type;
-	AccessType access = Access_Default;
-	UINT bindFlag = 0;
+	AccessType access;
+	UINT bindFlag;
 	DXGI_FORMAT format;
 	UINT size[3];
-	UINT mipLevel=0;
-	UINT elementStride=0;
-	UINT miscFlag=0;
+	UINT mipLevel;
+	UINT elementStride;
+	UINT miscFlag;
+	UINT sampleCount;
+	UINT sampleQuality;
+	inline ResourceDesc()
+	{
+		type = Resource_Buffer;
+		access = Access_Default;
+		bindFlag = 0;
+		mipLevel = 0;
+		elementStride = 0;
+		miscFlag = 0;
+		sampleCount = 1;
+		sampleQuality = 0;
+		memset(size, 0, sizeof(size));
+	}
 };
 
 class Resource

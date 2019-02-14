@@ -446,11 +446,11 @@ Json  LoadJson(const string & filePath) {
 	return move(json);
 }
 
+
 ResourceDesc FileLoader::LoadResourceDesc(const string & filePath)
 {
 	Json json = LoadJson(filePath);
 	ResourceDesc desc;
-	ZeroMemory(&desc, sizeof(desc));
 
 	desc.type = parseResourceType(json["type"].string_value());
 	desc.access = parseAccessType(json["access"].string_value());
@@ -485,6 +485,24 @@ ResourceDesc FileLoader::LoadResourceDesc(const string & filePath)
 			throw exception(("Can't find or recognize \"mip_level\". In file : " + filePath).c_str());
 		}
 		desc.mipLevel = json["mip_level"].int_value();
+
+		if (!json["sample_count"].is_null())
+		{
+			if (!json["sample_count"].is_number())
+			{
+				throw exception(("Can't recognize \"sample_count\". In file : " + filePath).c_str());
+			}
+			desc.sampleCount = json["sample_count"].int_value();
+		}
+		
+		if (!json["sample_quality"].is_null())
+		{
+			if (!json["sample_quality"].is_number())
+			{
+				throw exception(("Can't recognize \"sample_quality\". In file : " + filePath).c_str());
+			}
+			desc.sampleQuality = json["sample_quality"].int_value();
+		}
 	}
 
 	if (!json["size"].is_array() || json["size"].array_items().size() == 0)

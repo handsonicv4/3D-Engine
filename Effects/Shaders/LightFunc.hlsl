@@ -8,7 +8,7 @@ float4 Diffuse(float4 lightColor, float3 lightVec, float3 normal)
 float3 PointLightDiffuse(float3 lightColor, float3 lightPos,float3 pixelPos, float3 normal)
 {
 	float3 lightVec = lightPos - pixelPos;
-	lightColor = lightColor /(1+pow(length(lightVec),2))*20;
+	lightColor = lightColor /(1+pow(length(lightVec),2))*25;
 	lightVec= normalize(lightVec);
 	float NdotL = max(dot(normal, lightVec), 0);
 	return lightColor * NdotL;

@@ -405,8 +405,8 @@ bool Resource::CreateTexture2D(void * pData, size_t dataSize)
 	texDesc.MipLevels = desc.mipLevel;
 	texDesc.ArraySize = 1;
 	texDesc.Format = desc.format;
-	texDesc.SampleDesc.Count = 1;
-	texDesc.SampleDesc.Quality = 0;
+	texDesc.SampleDesc.Count = desc.sampleCount;
+	texDesc.SampleDesc.Quality = desc.sampleQuality;
 	texDesc.Width = desc.size[0];
 	texDesc.Height = desc.size[1];
 	texDesc.BindFlags = desc.bindFlag;

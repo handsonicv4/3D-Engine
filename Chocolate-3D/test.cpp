@@ -201,6 +201,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 	//--------------------------------------------------------------------------------
 
 	engine.LoadPostMesh(workingFolder + "Models\\fullScreen.obj");
+	D3D11_TEXTURE2D_DESC a;
 
 	engine.camera.SetPosition(0, 0, -8);
 	engine.camera.FaceTo(aiVector3D(0, -0.2, 0.8));
@@ -258,7 +259,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 	auto dragon = engine.LoadAsset(workingFolder + "Models\\dragon.obj");
 	auto dragon1 = engine.CreateInstance(dragon->defaultInstance);
 	dragon1->transform.SetPosition(0, -4.5, -1);
-	dragon1->transform.SetScaling(0.4);
+	dragon1->transform.SetScaling(0.3);
 	dragon1->components[0].materialInstance.diffusePower = 0.1;
 	dragon1->components[0].materialInstance.refractiveIndex = 1.5;
 	dragon1->components[0].materialInstance.opacity = 0.1;
@@ -271,6 +272,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 
 	auto post = engine.LoadAsset(workingFolder + "Models\\fullScreen.obj");
 
+	auto sphere = engine.LoadAsset(workingFolder + "Models\\sphere.obj");
+
+	auto s1 = engine.CreateInstance(sphere->defaultInstance);
+	s1->transform.SetScaling(0.4);
+	s1->transform.SetPosition(-3, 2, 3);
+	s1->components[0].materialInstance.diffusePower = 0.1;
+	s1->components[0].materialInstance.specularPower = 1.5;
+	s1->components[0].materialInstance.specularBlendFactor = 1;
+	s1->components[0].materialInstance.specularColor[0] = 1;
+	s1->components[0].materialInstance.specularColor[1] = 1;
+	s1->components[0].materialInstance.specularColor[2] = 1;
+	s1->components[0].materialInstance.specularHardness = 30;
+
 	Light x;
 	x.color[0] = 1.0f;
 	x.color[1] = 1.0f;
@@ -279,18 +293,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 	x.direction[0] = 0.0f;
 	x.direction[1] = 4.0f;
 	x.direction[2] = 0.0f;
-
-	Camera lc;
-	lc.verticalLock = false;
-	lc.SetPosition(x.direction[0], x.direction[1] + 2, x.direction[2]);
-	lc.FaceTo(aiVector3D(0, -1, 0));
-	lc.fovY = 120;
-	lc.screenAspect = 1;
-	lc.zNear = 0.1f;
-	lc.zFar = 1000;
-	lc.UpdateProjectionMatrix();
-	aiMatrix4x4 lvp = lc.GetProjectionMatrix()*lc.GetViewMatrix();
-	memcpy(&x.vP, &lvp, sizeof(float[16]));
+	
+	Camera lightCam;
+	lightCam.verticalLock = false;
+	lightCam.SetPosition(x.direction[0], x.direction[1], x.direction[2]);
+	lightCam.fovY = 90;
+	lightCam.screenAspect = 1;
+	lightCam.zFar = 1000;
+	lightCam.zNear = 0.1;
+	
+	lightCam.LookAt(aiVector3D(0,0,0));
+	lightCam.UpdateProjectionMatrix();
+	
+	aiMatrix4x4 vP =  lightCam.GetProjectionMatrix() * lightCam.GetViewMatrix();
+	memcpy(x.vP, &vP, sizeof(x.vP));
 
 	engine.lightList.push_back(x);
 
@@ -320,21 +336,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 	ShowCursor(false);
 	int time = SetTimer(window.hwnd, 1, 15, Timer15ms);
 
-
-
 	auto cam = engine.camera;
-	//Camera lc;
-	//lc.verticalLock = false;
-	//lc.SetPosition(engine.lightList[0].direction[0], engine.lightList[0].direction[1] + 2, engine.lightList[0].direction[2]);
-	//lc.FaceTo(aiVector3D(0, -1, 0));
-	//lc.fovY = 120;
-	//lc.screenAspect = 1;
-	//lc.zNear = 0.1f;
-	//lc.zFar = 1000;
-	
-	lc.UpdateProjectionMatrix();
-	
-	engine.mainLight = lc;
 
 	while (true)
 	{
